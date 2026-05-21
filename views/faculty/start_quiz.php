@@ -6,7 +6,7 @@
 
   // --- Authorization & Input Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   if (!isset($_GET['id']) || !filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.disabled = true;
             button.textContent = '...';
             try {
-                const response = await fetch('api/faculty/reenable_student.php', {
+                const response = await fetch(BASE_URL+'api/faculty/reenable_student.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ attempt_id: attemptId })
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.disabled = true;
             e.target.textContent = 'Updating...';
             try {
-                const response = await fetch('api/faculty/update_quiz_status.php', {
+                const response = await fetch(BASE_URL+'api/faculty/update_quiz_status.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ quiz_id: quizId, new_status_id: newStatusId })

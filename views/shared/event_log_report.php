@@ -5,7 +5,7 @@
 
   // --- Authorization Check (Allows any non-student role) ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] == 4) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
 

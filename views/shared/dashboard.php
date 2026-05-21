@@ -8,7 +8,7 @@
 
   // --- Authorization Check ---
   if (!isset($_SESSION['user_id'])) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   

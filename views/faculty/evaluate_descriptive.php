@@ -6,7 +6,7 @@
 
   // --- Authorization & Input Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2 || !isset($_GET['quiz_id'])) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   $quiz_id = filter_var($_GET['quiz_id'], FILTER_VALIDATE_INT);
@@ -47,7 +47,7 @@
                 <p class="student-info"><?php echo htmlspecialchars($answer['student_name']); ?></p>
                 <p class="question-text-eval"><strong>Question:</strong> <?php echo htmlspecialchars($answer['question_text']); ?></p>
                 <div class="answer-text">
-                    <?php echo nl2br(htmlspecialchars($answer['answer_text'])); ?>
+                    <?php echo nl2br(htmlspecialchars($answer['answer_text'] ?? '')); ?>
                 </div>
 
                 <form class="evaluation-form" data-answer-id="<?php echo $answer['answer_id']; ?>">
@@ -55,7 +55,7 @@
                         <label for="score_<?php echo $answer['answer_id']; ?>">Score:</label>
                         <input type="number" step="0.5" min="0" max="<?php echo $answer['max_points']; ?>" 
                                id="score_<?php echo $answer['answer_id']; ?>" name="score_awarded" 
-                               class="input-field" value="<?php echo htmlspecialchars($answer['score_awarded']); ?>" required>
+                               class="input-field" value="<?php echo htmlspecialchars($answer['score_awarded'] ?? ''); ?>" required>
                         <span> / <?php echo htmlspecialchars($answer['max_points']); ?></span>
                     </div>
                     <button type="submit" class="button-red">Save Score</button>
@@ -67,6 +67,7 @@
 </div>
 
 <script>
+const BASE_URL = '<?= get_base_url() ?>';
 document.querySelectorAll('.evaluation-form').forEach(form => {
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -80,7 +81,7 @@ document.querySelectorAll('.evaluation-form').forEach(form => {
         };
 
         try {
-            const response = await fetch('api/faculty/save_evaluation.php', {
+            const response = await fetch(BASE_URL + 'api/faculty/save_evaluation.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

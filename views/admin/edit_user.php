@@ -5,7 +5,7 @@
 
   // --- Authorization & Input Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1 || !isset($_GET['id'])) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   $user_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (result.success && specializationsSelect) {
             const selectedSpecializations = $('#specializations').val();
             
-            await fetch('api/admin/assign_specialization.php', {
+            await fetch(BASE_URL + 'api/admin/assign_specialization.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

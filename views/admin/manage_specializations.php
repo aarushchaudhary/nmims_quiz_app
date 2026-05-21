@@ -4,7 +4,7 @@
   require_once '../../config/database.php';
 
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   $schools = $pdo->query("SELECT id, name FROM schools ORDER BY name ASC")->fetchAll();
@@ -69,12 +69,13 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <script>
+const BASE_URL = '<?= get_base_url() ?>';
 document.addEventListener('DOMContentLoaded', function() {
     // --- Existing code for add/delete specializations (condensed for clarity) ---
     const addForm = document.getElementById('add-specialization-form');
     const tableBody = document.getElementById('specializations-table-body');
     async function loadSpecializations() {
-        const response = await fetch('api/admin/get_specializations.php');
+        const response = await fetch(BASE_URL + 'api/admin/get_specializations.php');
         const specializations = await response.json();
         tableBody.innerHTML = '';
         if (specializations.length === 0) { tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No specializations found.</td></tr>'; return; }
@@ -91,8 +92,8 @@ document.addEventListener('DOMContentLoaded', function() {
             tableBody.insertAdjacentHTML('beforeend', row);
         });
     }
-    addForm.addEventListener('submit', async e => { /* existing add logic */ e.preventDefault(); const data = Object.fromEntries(new FormData(addForm).entries()); const response = await fetch('api/admin/add_specialization.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const result = await response.json(); if (result.success) { addForm.reset(); loadSpecializations(); } else { alert('Error: ' + result.message); } });
-    tableBody.addEventListener('click', async e => { /* existing delete logic */ if (e.target.classList.contains('btn-delete')) { const specId = e.target.dataset.id; if (confirm('Are you sure?')) { const response = await fetch('api/admin/delete_specialization.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: specId }) }); const result = await response.json(); if (result.success) { loadSpecializations(); } else { alert('Error: ' + result.message); } } } });
+    addForm.addEventListener('submit', async e => { /* existing add logic */ e.preventDefault(); const data = Object.fromEntries(new FormData(addForm).entries()); const response = await fetch(BASE_URL + 'api/admin/add_specialization.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const result = await response.json(); if (result.success) { addForm.reset(); loadSpecializations(); } else { alert('Error: ' + result.message); } });
+    tableBody.addEventListener('click', async e => { /* existing delete logic */ if (e.target.classList.contains('btn-delete')) { const specId = e.target.dataset.id; if (confirm('Are you sure?')) { const response = await fetch(BASE_URL + 'api/admin/delete_specialization.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: specId }) }); const result = await response.json(); if (result.success) { loadSpecializations(); } else { alert('Error: ' + result.message); } } } });
     function escapeHTML(str) { if (!str) return ''; return str.replace(/[&<>"']/g, match => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[match]); }
 
     // --- NEW: Code for Bulk Assignment Modal ---
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
         assignBtn.disabled = true;
 
         try {
-            const response = await fetch('api/admin/bulk_assign_specialization.php', {
+            const response = await fetch(BASE_URL + 'api/admin/bulk_assign_specialization.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ specialization_id: specId, sap_ids: sapIds })

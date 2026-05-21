@@ -5,7 +5,7 @@
 
   // --- Authorization Check for Admin ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
 
@@ -168,6 +168,7 @@
 </div>
 
 <script>
+const BASE_URL = '<?= get_base_url() ?>';
 document.addEventListener('DOMContentLoaded', function() {
     // --- Delete Modal Logic ---
     const deleteModal = document.getElementById('delete-confirm-modal');
@@ -206,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmDeleteBtn.addEventListener('click', async () => {
         if (userIdToDelete) {
             try {
-                const response = await fetch('api/admin/delete_user.php', {
+                const response = await fetch(BASE_URL + 'api/admin/delete_user.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userIdToDelete })
@@ -235,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmResetBtn.addEventListener('click', async () => {
         if (userIdToReset && newPasswordField.value) {
             try {
-                const response = await fetch('api/admin/reset_password.php', {
+                const response = await fetch(BASE_URL + 'api/admin/reset_password.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userIdToReset, new_password: newPasswordField.value })

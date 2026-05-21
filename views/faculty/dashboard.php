@@ -8,7 +8,7 @@
   // --- Authorization Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
       // If the user is not a faculty member, redirect them to the login page
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   

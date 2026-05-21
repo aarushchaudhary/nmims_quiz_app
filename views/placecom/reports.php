@@ -6,7 +6,7 @@
   // --- **FIX:** Updated Authorization Check ---
   // Now allows any user who is NOT a student (role_id 4) to access this page.
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] == 4) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
 
@@ -170,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             placeholder.style.display = 'none';
             reportContent.style.display = 'block';
-            const BASE_URL = '<?= get_base_url() ?>';
             exportBtn.href = `${BASE_URL}api/shared/export_all_results.php?quiz_id=${quizId}`;
             exportBtn.style.display = 'inline-block';
         } catch (error) {

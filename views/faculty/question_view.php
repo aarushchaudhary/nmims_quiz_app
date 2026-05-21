@@ -6,7 +6,7 @@
 
   // --- Authorization & Input Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2 || !isset($_GET['quiz_id'])) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   $quiz_id = filter_var($_GET['quiz_id'], FILTER_VALIDATE_INT);
@@ -64,6 +64,7 @@
 </div>
 
 <script>
+const BASE_URL = '<?= get_base_url() ?>';
 // This script is identical to the previous version and handles the delete confirmation
 document.addEventListener('DOMContentLoaded', function() {
     const deleteModal = document.getElementById('delete-confirm-modal');
@@ -88,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmDeleteBtn.addEventListener('click', async () => {
         if (questionIdToDelete) {
             try {
-                const response = await fetch('api/faculty/delete_question.php', {
+                const response = await fetch(BASE_URL + 'api/faculty/delete_question.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question_id: questionIdToDelete })
