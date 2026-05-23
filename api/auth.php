@@ -10,14 +10,14 @@ if (session_status() == PHP_SESSION_NONE) {
 require_once '../config/database.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
-$username = $data['username'] ?? '';
+$email = $data['email'] ?? '';
 $password = $data['password'] ?? '';
 $force_login = $data['force'] ?? false;
 
 // Fetch user data
-$sql_user = "SELECT id, password_hash, active_session_id, role_id FROM users WHERE username = :username AND is_active = 1";
+$sql_user = "SELECT id, password_hash, active_session_id, role_id FROM users WHERE email = :email AND is_active = 1";
 $stmt_user = $pdo->prepare($sql_user);
-$stmt_user->execute(['username' => $username]);
+$stmt_user->execute(['email' => $email]);
 $user = $stmt_user->fetch();
 
 if (!$user || !password_verify($password, $user['password_hash'])) {

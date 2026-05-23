@@ -10,7 +10,8 @@
  */
 
 // Get the requested file path
-$requested_file = __DIR__ . $_SERVER['REQUEST_URI'];
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$requested_file = __DIR__ . $path;
 
 // If the file exists and is not a directory, serve it
 if (is_file($requested_file)) {

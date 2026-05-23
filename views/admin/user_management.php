@@ -22,7 +22,7 @@
 
   if (!empty($search_query_val)) {
       $search_term = '%' . $search_query_val . '%';
-      $where_clauses[] = "(COALESCE(s.name, f.name, p.name, a.name, h.name) LIKE ? OR u.username LIKE ? OR COALESCE(s.sap_id, f.sap_id, p.sap_id) LIKE ?)";
+      $where_clauses[] = "(COALESCE(s.name, f.name, p.name, a.name, h.name) LIKE ? OR u.email LIKE ? OR COALESCE(s.sap_id, f.sap_id) LIKE ?)";
       array_push($params, $search_term, $search_term, $search_term);
   }
   if (!empty($role_filter_val)) {
@@ -37,7 +37,7 @@
   $offset = ($current_page - 1) * $items_per_page;
 
   // Get the total number of users matching the filters
-  $total_sql = "SELECT COUNT(DISTINCT u.id) FROM users u LEFT JOIN students s ON u.id = s.user_id AND u.role_id = 4 LEFT JOIN faculties f ON u.id = f.user_id AND u.role_id = 2 LEFT JOIN placement_officers p ON u.id = p.user_id AND u.role_id = 3 LEFT JOIN admins a ON u.id = a.user_id AND u.role_id = 1 LEFT JOIN heads h ON u.id = h.user_id $where_sql";
+  $total_sql = "SELECT COUNT(DISTINCT u.id) FROM users u LEFT JOIN students s ON u.id = s.user_id AND u.role_id = 4 LEFT JOIN faculties f ON u.id = f.user_id AND u.role_id = 2 LEFT JOIN placement_officers p ON u.id = p.user_id AND u.role_id = 3 LEFT JOIN admins a ON u.id = a.user_id AND u.role_id IN (1, 6) LEFT JOIN heads h ON u.id = h.user_id $where_sql";
   $stmt_total = $pdo->prepare($total_sql);
   $stmt_total->execute($params);
   $total_users = $stmt_total->fetchColumn();
@@ -45,18 +45,18 @@
 
   // --- Fetch Users for the current page ---
   $sql = "SELECT
-            u.id, u.username, r.name as role_name,
+            u.id, u.email, r.name as role_name,
             COALESCE(s.name, f.name, p.name, a.name, h.name) as full_name,
-            COALESCE(s.sap_id, f.sap_id, p.sap_id) as sap_id
+            COALESCE(s.sap_id, f.sap_id) as sap_id
           FROM users u
           JOIN roles r ON u.role_id = r.id
           LEFT JOIN students s ON u.id = s.user_id AND u.role_id = 4
           LEFT JOIN faculties f ON u.id = f.user_id AND u.role_id = 2
           LEFT JOIN placement_officers p ON u.id = p.user_id AND u.role_id = 3
-          LEFT JOIN admins a ON u.id = a.user_id AND u.role_id = 1
+          LEFT JOIN admins a ON u.id = a.user_id AND u.role_id IN (1, 6)
           LEFT JOIN heads h ON u.id = h.user_id
           $where_sql
-          GROUP BY u.id, u.username, r.name, full_name, sap_id
+          GROUP BY u.id, u.email, r.name, full_name, sap_id
           ORDER BY u.id DESC
           LIMIT ? OFFSET ?";
   
@@ -81,7 +81,7 @@
 <div class="confirm-modal-overlay" id="reset-password-modal">
     <div class="confirm-modal">
         <h3>Reset Password</h3>
-        <p>Enter a new password for the user: <strong id="reset-username-display"></strong></p>
+        <p>Enter a new password for the user: <strong id="reset-email-display"></strong></p>
         <form class="reset-password-form" id="reset-password-form"><div class="form-group"><label for="new_password">New Password</label><input type="password" id="new_password" name="new_password" class="input-field" required></div></form>
         <div class="button-group">
             <button class="btn-cancel" id="cancel-reset-btn">Cancel</button>
@@ -102,7 +102,7 @@
     <div class="section-box" style="margin-top: 15px;">
         <form method="GET" action="user_management.php" class="form-container" style="padding:0; box-shadow:none;">
             <div class="form-row">
-                <div class="form-group" style="flex: 2;"><label for="search_query">Search by Name / Username / SAP ID</label><input type="text" id="search_query" name="search_query" class="input-field" placeholder="Enter search term..." value="<?php echo htmlspecialchars($search_query_val); ?>"></div>
+                <div class="form-group" style="flex: 2;"><label for="search_query">Search by Name / Email / SAP ID</label><input type="text" id="search_query" name="search_query" class="input-field" placeholder="Enter search term..." value="<?php echo htmlspecialchars($search_query_val); ?>"></div>
                 <div class="form-group" style="flex: 1;"><label for="role_filter">Filter by Role</label><select id="role_filter" name="role_filter" class="input-field"><option value="">All Roles</option><?php foreach ($roles as $role): ?><option value="<?php echo $role['id']; ?>" <?php if($role['id'] == $role_filter_val) echo 'selected'; ?>><?php echo htmlspecialchars(ucfirst($role['name'])); ?></option><?php endforeach; ?></select></div>
             </div>
             <div class="button-group" style="justify-content: flex-start;">
@@ -119,7 +119,7 @@
 
     <table class="data-table">
         <thead>
-            <tr><th>Full Name</th><th>Username</th><th>SAP ID</th><th>Role</th><th>Actions</th></tr>
+            <tr><th>Full Name</th><th>Email</th><th>SAP ID</th><th>Role</th><th>Actions</th></tr>
         </thead>
         <tbody id="user-table-body">
             <?php if (empty($users)): ?>
@@ -128,12 +128,12 @@
                 <?php foreach ($users as $user): ?>
                     <tr id="user-row-<?php echo $user['id']; ?>">
                         <td><?php echo htmlspecialchars($user['full_name'] ?? 'N/A'); ?></td>
-                        <td><?php echo htmlspecialchars($user['username']); ?></td>
+                        <td><?php echo htmlspecialchars($user['email']); ?></td>
                         <td><?php echo htmlspecialchars($user['sap_id'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars(ucfirst($user['role_name'])); ?></td>
                         <td class="action-buttons" style="flex-direction:row; gap:5px;">
                             <a href="edit_user.php?id=<?php echo $user['id']; ?>" class="btn-edit">Edit</a>
-                            <button class="btn-reset-password" data-user-id="<?php echo $user['id']; ?>" data-username="<?php echo htmlspecialchars($user['username']); ?>" style="background-color:#007bff;">Reset Pass</button>
+                            <button class="btn-reset-password" data-user-id="<?php echo $user['id']; ?>" data-email="<?php echo htmlspecialchars($user['email']); ?>" style="background-color:#007bff;">Reset Pass</button>
                             <button class="btn-delete" data-user-id="<?php echo $user['id']; ?>" style="background-color:#dc3545;">Delete</button>
                         </td>
                     </tr>
@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetModal = document.getElementById('reset-password-modal');
     const cancelResetBtn = document.getElementById('cancel-reset-btn');
     const confirmResetBtn = document.getElementById('confirm-reset-btn');
-    const resetUsernameDisplay = document.getElementById('reset-username-display');
+    const resetEmailDisplay = document.getElementById('reset-email-display');
     const newPasswordField = document.getElementById('new_password');
     let userIdToReset = null;
 
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (e.target.classList.contains('btn-reset-password')) {
             userIdToReset = e.target.dataset.userId;
-            resetUsernameDisplay.textContent = e.target.dataset.username;
+            resetEmailDisplay.textContent = e.target.dataset.email;
             resetModal.style.display = 'flex';
             newPasswordField.focus();
         }

@@ -9,8 +9,8 @@
 
   <form id="login-form">
     <div class="form-group">
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" required>
+      <label for="email">Email Address</label>
+      <input type="email" id="email" name="email" placeholder="example@nmims.edu" required>
     </div>
     <div class="form-group">
       <label for="password">Password</label>

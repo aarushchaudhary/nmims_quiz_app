@@ -4,6 +4,8 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 // Load base URL configuration
 require_once __DIR__ . '/../../config/base_url.php';
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,6 +30,8 @@ require_once __DIR__ . '/../../config/base_url.php';
             // The buttons will only be displayed if $isExamPage is NOT set to true.
             if (isset($_SESSION['user_id']) && (!isset($isExamPage) || $isExamPage !== true)): 
             ?>
+
+                
                 <a href="<?= get_base_url() ?>index.php" class="home-button">Home</a>
                 <a href="<?= get_base_url() ?>logout.php" class="logout-button">Logout</a>
             <?php endif; ?>

@@ -9,12 +9,24 @@
       exit();
   }
 
+  // --- Get User's School (if School Head) ---
+  $user_school_id = null;
+  if ($_SESSION['role_id'] == 5) {
+      $stmt = $pdo->prepare("SELECT school_id FROM heads WHERE user_id = ?");
+      $stmt->execute([$_SESSION['user_id']]);
+      $user_school_id = $stmt->fetchColumn();
+  }
+
   // --- Fetch data for filter dropdowns ---
-  $schools = $pdo->query("SELECT id, name FROM schools ORDER BY name ASC")->fetchAll();
+  if ($user_school_id) {
+      $schools = $pdo->query("SELECT id, name FROM schools WHERE id = " . (int)$user_school_id)->fetchAll();
+  } else {
+      $schools = $pdo->query("SELECT id, name FROM schools ORDER BY name ASC")->fetchAll();
+  }
 
   // --- Get Filter Values & Build Query to populate the quiz selector ---
   $search_query = $_GET['search'] ?? '';
-  $school_filter = $_GET['school'] ?? '';
+  $school_filter = $user_school_id ? $user_school_id : ($_GET['school'] ?? '');
   $course_filter = $_GET['course'] ?? '';
   $date_filter = $_GET['date'] ?? '';
 
@@ -56,7 +68,7 @@
         <form method="GET" action="event_log_report.php">
             <div class="form-row">
                 <div class="form-group" style="flex: 2;"><label for="search">Search by Quiz Title</label><input type="text" name="search" id="search" class="input-field" placeholder="Enter quiz title..." value="<?php echo htmlspecialchars($search_query); ?>"></div>
-                <div class="form-group" style="flex: 1;"><label for="school">Filter by School</label><select name="school" id="school" class="input-field"><option value="">All Schools</option><?php foreach($schools as $school): ?><option value="<?php echo $school['id']; ?>" <?php if($school['id'] == $school_filter) echo 'selected'; ?>><?php echo htmlspecialchars($school['name']); ?></option><?php endforeach; ?></select></div>
+                <div class="form-group" style="flex: 1;"><label for="school">Filter by School</label><select name="school" id="school" class="input-field" <?php if($user_school_id) echo 'readonly style="pointer-events: none; background-color: #e9ecef;"'; ?>><?php if(!$user_school_id): ?><option value="">All Schools</option><?php endif; ?><?php foreach($schools as $school): ?><option value="<?php echo $school['id']; ?>" <?php if($school['id'] == $school_filter) echo 'selected'; ?>><?php echo htmlspecialchars($school['name']); ?></option><?php endforeach; ?></select></div>
                 <div class="form-group" style="flex: 1;"><label for="course">Filter by Course</label><select name="course" id="course" class="input-field"><option value="">All Courses</option></select></div>
                 <div class="form-group" style="flex: 1;"><label for="date">Filter by Date</label><input type="date" name="date" id="date" class="input-field" value="<?php echo htmlspecialchars($date_filter); ?>"></div>
                 <div class="button-group"><button type="submit" class="button-red" style="width:auto;">Find Quizzes</button><a href="event_log_report.php" class="button-red" style="width:auto; background-color:#6c757d;">Clear</a></div>
