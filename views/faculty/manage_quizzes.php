@@ -6,7 +6,7 @@
 
   // --- Authorization Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
 
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmBtn.addEventListener('click', async () => {
         if (quizIdToDelete) {
             try {
-                const response = await fetch('api/faculty/delete_quiz.php', {
+                const response = await fetch(BASE_URL+'api/faculty/delete_quiz.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ quiz_id: quizIdToDelete })

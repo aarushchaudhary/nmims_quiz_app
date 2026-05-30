@@ -5,7 +5,7 @@
 
   // --- Authorization & Input Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2 || !isset($_GET['id'])) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   $quiz_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);

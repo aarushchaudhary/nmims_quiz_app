@@ -6,27 +6,24 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+require_once __DIR__ . '/config/base_url.php';
 
 if (isset($_SESSION['user_id']) && isset($_SESSION['role_id'])) {
     switch ($_SESSION['role_id']) {
         case 1: // Admin
-            header('Location: views/admin/dashboard.php');
-            exit();
+            redirect('views/admin/dashboard.php');
         case 2: // Faculty
-            header('Location: views/faculty/dashboard.php');
-            exit();
+            redirect('views/faculty/dashboard.php');
         case 3: // Placement Officer
-            header('Location: views/placecom/dashboard.php');
-            exit();
+            redirect('views/placecom/dashboard.php');
         case 4: // Student
-            header('Location: views/student/dashboard.php');
-            exit();
+            redirect('views/student/dashboard.php');
+        case 5: // School Head
+            redirect('views/head/dashboard.php');
         // **NEW:** A default case to handle all other roles
         default:
-            header('Location: views/shared/dashboard.php');
-            exit();
+            redirect('views/shared/dashboard.php');
     }
 } else {
-    header('Location: login.php');
-    exit();
+    redirect('login.php');
 }

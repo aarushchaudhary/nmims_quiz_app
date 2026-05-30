@@ -6,7 +6,7 @@
   // --- **FIX:** Updated Authorization Check ---
   // Now allows any user who is NOT a student (role_id 4) to access this page.
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] == 4) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
 
@@ -18,6 +18,19 @@
   $school_filter = $_GET['school'] ?? '';
   $course_filter = $_GET['course'] ?? '';
   $date_filter = $_GET['date'] ?? '';
+
+  // --- Lock down school filter for School Heads (role_id 5) ---
+  $is_school_head = ($_SESSION['role_id'] == 5);
+  $head_school_id = null;
+  
+  if ($is_school_head) {
+      $head_stmt = $pdo->prepare("SELECT school_id FROM heads WHERE user_id = ?");
+      $head_stmt->execute([$_SESSION['user_id']]);
+      $head_school_id = $head_stmt->fetchColumn();
+      
+      // Forcibly override the filter so they can ONLY query their assigned school
+      $school_filter = $head_school_id; 
+  }
 
   // This query is for all non-student roles, so no faculty_id check is needed.
   $where_clauses = ['1=1']; // Start with a true condition
@@ -58,7 +71,21 @@
         <form method="GET" action="reports.php">
             <div class="form-row">
                 <div class="form-group" style="flex: 2;"><label for="search">Search by Title</label><input type="text" name="search" id="search" class="input-field" placeholder="Enter quiz title..." value="<?php echo htmlspecialchars($search_query); ?>"></div>
-                <div class="form-group" style="flex: 1;"><label for="school">Filter by School</label><select name="school" id="school" class="input-field"><option value="">All Schools</option><?php foreach($schools as $school): ?><option value="<?php echo $school['id']; ?>" <?php if($school['id'] == $school_filter) echo 'selected'; ?>><?php echo htmlspecialchars($school['name']); ?></option><?php endforeach; ?></select></div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="school">Filter by School</label>
+                    <select name="school" id="school" class="input-field" <?php if($is_school_head) echo 'disabled'; ?>>
+                        <?php if(!$is_school_head): ?><option value="">All Schools</option><?php endif; ?>
+                        <?php foreach($schools as $school): ?>
+                            <?php if ($is_school_head && $school['id'] != $head_school_id) continue; ?>
+                            <option value="<?php echo $school['id']; ?>" <?php if($school['id'] == $school_filter) echo 'selected'; ?>>
+                                <?php echo htmlspecialchars($school['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if($is_school_head): ?>
+                        <input type="hidden" name="school" value="<?php echo htmlspecialchars($head_school_id); ?>">
+                    <?php endif; ?>
+                </div>
                 <div class="form-group" style="flex: 1;"><label for="course">Filter by Course</label><select name="course" id="course" class="input-field"><option value="">All Courses</option></select></div>
                 <div class="form-group" style="flex: 1;"><label for="date">Filter by Date</label><input type="date" name="date" id="date" class="input-field" value="<?php echo htmlspecialchars($date_filter); ?>"></div>
                 <div class="button-group"><button type="submit" class="button-red" style="width:auto;">Find Quizzes</button><a href="reports.php" class="button-red" style="width:auto; background-color:#6c757d;">Clear</a></div>
@@ -170,7 +197,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             placeholder.style.display = 'none';
             reportContent.style.display = 'block';
-            const BASE_URL = '<?= get_base_url() ?>';
             exportBtn.href = `${BASE_URL}api/shared/export_all_results.php?quiz_id=${quizId}`;
             exportBtn.style.display = 'inline-block';
         } catch (error) {

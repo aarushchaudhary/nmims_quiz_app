@@ -912,6 +912,7 @@ body.exam-mode {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -996,7 +997,7 @@ body.exam-mode {
   margin-right: 12px;
 }
 
-.option-label input:checked + span {
+.option-label input:checked+span {
   font-weight: bold;
 }
 

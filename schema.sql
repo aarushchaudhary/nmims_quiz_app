@@ -45,7 +45,7 @@ CREATE TABLE `exam_statuses` (
 -- ================================
 CREATE TABLE `users` (
   `id`                INT AUTO_INCREMENT PRIMARY KEY,
-  `username`          VARCHAR(50)  NOT NULL UNIQUE,
+  `email`             VARCHAR(100) NOT NULL UNIQUE,
   `password_hash`     VARCHAR(255) NOT NULL,
   `active_session_id` VARCHAR(255) DEFAULT NULL,
   `role_id`           INT          NOT NULL,
@@ -72,6 +72,7 @@ CREATE TABLE `faculties` (
   `name`       VARCHAR(100) NOT NULL,
   `sap_id`     VARCHAR(20)  NOT NULL UNIQUE,
   `school_id`  INT          DEFAULT NULL,
+  `is_visiting` TINYINT(1)  NOT NULL DEFAULT 0,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
   FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -79,7 +80,6 @@ CREATE TABLE `faculties` (
 CREATE TABLE `placement_officers` (
   `user_id`    INT          PRIMARY KEY,
   `name`       VARCHAR(100) NOT NULL,
-  `sap_id`     VARCHAR(20)  NOT NULL UNIQUE,
   `department` VARCHAR(100),
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -94,7 +94,9 @@ CREATE TABLE `heads` (
   `id`      INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL UNIQUE,
   `name`    VARCHAR(100) NOT NULL,
-  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+  `school_id` INT DEFAULT NULL,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -261,7 +263,7 @@ INSERT INTO `roles` (`id`, `name`) VALUES
 (2, 'faculty'),
 (3, 'placement'),
 (4, 'student'),
-(5, 'program chair'),
+(5, 'school head'),
 (6, 'director');
 
 -- Populating the 'schools' table

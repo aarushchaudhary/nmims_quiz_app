@@ -5,17 +5,24 @@
 
   // --- Authorization & Input Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1 || !isset($_GET['id'])) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   $user_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
 
-  // --- Fetch all user data (FIXED: Removed u.email from the query) ---
-  $sql = "SELECT u.id, u.username, u.role_id, s.*, f.*, p.*
+  // --- Fetch all user data ---
+  $sql = "SELECT u.id, u.email, u.role_id, 
+                 s.name as student_name, s.sap_id as student_sap_id, s.roll_no, s.course_id, s.batch, s.graduation_year,
+                 f.name as faculty_name, f.sap_id as faculty_sap_id, f.school_id as faculty_school_id, f.is_visiting as faculty_is_visiting,
+                 p.name as placecom_name, p.department as placecom_department,
+                 h.name as head_name, h.school_id as head_school_id,
+                 a.name as admin_name
           FROM users u
           LEFT JOIN students s ON u.id = s.user_id
           LEFT JOIN faculties f ON u.id = f.user_id
           LEFT JOIN placement_officers p ON u.id = p.user_id
+          LEFT JOIN heads h ON u.id = h.user_id
+          LEFT JOIN admins a ON u.id = a.user_id
           WHERE u.id = ?";
   $stmt = $pdo->prepare($sql);
   $stmt->execute([$user_id]);
@@ -27,9 +34,10 @@
   }
   
   // Determine the full name from the correct table
-  $full_name = $user['name'] ?? ''; // This will get the name from students, faculties, or placecom
+  $full_name = $user['student_name'] ?? $user['faculty_name'] ?? $user['placecom_name'] ?? $user['head_name'] ?? $user['admin_name'] ?? ''; 
 
   $courses = $pdo->query("SELECT id, name FROM courses")->fetchAll();
+  $schools = $pdo->query("SELECT id, name FROM schools")->fetchAll();
   
   // --- Fetch specializations for the form ---
   $specializations = [];
@@ -58,7 +66,10 @@
         
         <div class="form-row">
             <div class="form-group"><label>Full Name</label><input type="text" name="full_name" value="<?php echo htmlspecialchars($full_name); ?>" required></div>
-            <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo htmlspecialchars($user['username']); ?>" required></div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
+            </div>
         </div>
         <div class="form-group">
             <label>New Password (leave blank to keep current password)</label>
@@ -70,12 +81,12 @@
         <div class="student-fields">
             <h4>Student Details</h4>
             <div class="form-row">
-                <div class="form-group"><label>SAP ID</label><input type="text" name="sap_id" value="<?php echo htmlspecialchars($user['sap_id']); ?>"></div>
-                <div class="form-group"><label>Roll No.</label><input type="text" name="roll_no" value="<?php echo htmlspecialchars($user['roll_no']); ?>"></div>
+                <div class="form-group"><label>SAP ID</label><input type="text" name="sap_id" value="<?php echo htmlspecialchars($user['student_sap_id'] ?? ''); ?>"></div>
+                <div class="form-group"><label>Roll No.</label><input type="text" name="roll_no" value="<?php echo htmlspecialchars($user['roll_no'] ?? ''); ?>"></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Course</label><select name="course_id"><?php foreach($courses as $c) echo "<option value='{$c['id']}' ".($user['course_id']==$c['id']?'selected':'').">{$c['name']}</option>"; ?></select></div>
-                <div class="form-group"><label>Graduation Year</label><input type="number" name="graduation_year" value="<?php echo htmlspecialchars($user['graduation_year']); ?>"></div>
+                <div class="form-group"><label>Graduation Year</label><input type="number" name="graduation_year" value="<?php echo htmlspecialchars($user['graduation_year'] ?? ''); ?>"></div>
             </div>
             <div class="form-group">
                 <label for="specializations">Assign Specializations</label>
@@ -88,12 +99,46 @@
         </div>
         <?php endif; ?>
 
-        <?php if ($user['role_id'] == 2 || $user['role_id'] == 3): ?>
+        <?php if ($user['role_id'] == 2): ?>
         <div class="faculty-fields">
-            <h4>Details</h4>
+            <h4>Faculty Details</h4>
             <div class="form-row">
-                <div class="form-group"><label>SAP ID</label><input type="text" name="faculty_sap_id" value="<?php echo htmlspecialchars($user['sap_id']); ?>"></div>
-                <div class="form-group"><label>Department</label><input type="text" name="department" value="<?php echo htmlspecialchars($user['department']); ?>"></div>
+                <div class="form-group"><label>SAP ID</label><input type="text" name="faculty_sap_id" value="<?php echo htmlspecialchars($user['faculty_sap_id'] ?? ''); ?>"></div>
+                <div class="form-group"><label>School</label>
+                    <select name="department">
+                        <option value="">-- Select --</option>
+                        <?php foreach($schools as $school): ?>
+                        <option value="<?php echo $school['id']; ?>" <?php echo ($user['faculty_school_id'] == $school['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($school['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="is_visiting" name="is_visiting" value="1" style="width: auto; height: 18px;" <?php echo (!empty($user['faculty_is_visiting'])) ? 'checked' : ''; ?>>
+                    <label for="is_visiting" style="margin: 0;">Visiting Faculty</label>
+                </div>
+            </div>
+        </div>
+        <?php elseif ($user['role_id'] == 3): ?>
+        <div class="placecom-fields">
+            <h4>Placement Officer Details</h4>
+            <div class="form-row">
+                <div class="form-group"><label>Department</label><input type="text" name="department" value="<?php echo htmlspecialchars($user['placecom_department'] ?? ''); ?>"></div>
+            </div>
+        </div>
+        <?php elseif ($user['role_id'] == 5): ?>
+        <div class="head-fields">
+            <h4>School Head Details</h4>
+            <div class="form-row">
+                <div class="form-group"><label>School</label>
+                    <select name="department">
+                        <option value="">-- Select --</option>
+                        <?php foreach($schools as $school): ?>
+                        <option value="<?php echo $school['id']; ?>" <?php echo ($user['head_school_id'] == $school['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($school['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
         </div>
         <?php endif; ?>
@@ -131,50 +176,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error fetching user specializations:', error));
     }
 
-    // Handle form submission to include specialization data
-    document.getElementById('edit-user-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        // First, submit the main user data
-        const formData = new FormData(this);
-        const response = await fetch(this.action, {
-            method: 'POST',
-            body: formData
-        });
-        
-        // Check if the response is valid JSON before parsing
-        const resultText = await response.text();
-        let result;
-        try {
-            result = JSON.parse(resultText);
-        } catch (error) {
-            console.error("Failed to parse server response:", resultText);
-            alert("An unexpected error occurred. Please check the console for details.");
-            return;
-        }
-
-        // If main user data saved successfully and it's a student, save specializations
-        if (result.success && specializationsSelect) {
-            const selectedSpecializations = $('#specializations').val();
-            
-            await fetch('api/admin/assign_specialization.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    student_id: <?php echo $user_id; ?>,
-                    specialization_ids: selectedSpecializations
-                })
-            });
-        }
-        
-        // Provide feedback to the admin
-        if(result.success) {
-            alert('User details saved successfully!');
-            window.location.href = 'user_management.php'; // Redirect back to the list
-        } else {
-            alert('Error saving user details: ' + (result.message || 'Unknown error'));
-        }
-    });
 });
 </script>
 

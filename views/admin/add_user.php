@@ -6,7 +6,7 @@
 
   // --- Authorization Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
 
@@ -44,7 +44,10 @@
 
         <div class="form-row">
             <div class="form-group"><label for="full_name">Full Name</label><input type="text" id="full_name" name="full_name" required></div>
-            <div class="form-group"><label for="username">Username</label><input type="text" id="username" name="username" required></div>
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="example@nmims.edu" required>
+            </div>
         </div>
         <div class="form-group">
             <label for="password">Password</label>
@@ -97,8 +100,16 @@
 
             <div class="staff-fields" style="display:none;">
                 <h4>Staff Details</h4>
+                
+                <div class="form-row" id="visiting-faculty-group" style="display:none;">
+                    <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="is_visiting" name="is_visiting" style="width: auto; height: 18px;">
+                        <label for="is_visiting" style="margin: 0;">Visiting Faculty (Allows non-NMIMS email)</label>
+                    </div>
+                </div>
+
                 <div class="form-row">
-                    <div class="form-group" id="staff-sap-id-group"><label>SAP ID</label><input type="text" name="staff_sap_id"></div>
+                    <div class="form-group" id="staff-sap-id-group"><label>SAP ID</label><input type="text" id="staff_sap_id" name="staff_sap_id"></div>
                     <div class="form-group" id="staff-school-group"><label>School / Department</label><select id="staff_school_id" name="staff_school_id"><option value="">-- Select --</option><?php foreach($schools as $school): ?><option value="<?php echo $school['id']; ?>"><?php echo htmlspecialchars($school['name']); ?></option><?php endforeach; ?></select></div>
                 </div>
             </div>
@@ -132,8 +143,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (roleText === 'student') {
             studentFields.style.display = 'block';
-        } else if (roleText === 'faculty' || roleText.includes('placement')) { // More robust check
+        } else if (roleText === 'faculty' || roleText.includes('head')) { 
             staffFields.style.display = 'block';
+            
+            // Toggle SAP ID and Visiting Checkbox
+            if (roleText.includes('head')) {
+                document.getElementById('staff-sap-id-group').style.display = 'none';
+                document.getElementById('visiting-faculty-group').style.display = 'none';
+                document.getElementById('staff-school-group').style.display = 'flex';
+            } else {
+                document.getElementById('staff-sap-id-group').style.display = 'flex';
+                document.getElementById('staff-school-group').style.display = 'flex';
+                document.getElementById('visiting-faculty-group').style.display = 'flex';
+            }
         }
     });
 

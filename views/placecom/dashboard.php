@@ -8,7 +8,7 @@
 
   // --- Authorization Check for Placement Officer (role_id = 3) ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 3) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   

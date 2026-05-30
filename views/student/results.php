@@ -5,14 +5,14 @@
 
   // --- Authorization & Input Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 4 || !isset($_GET['attempt_id'])) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
 
   $attempt_id = filter_var($_GET['attempt_id'], FILTER_VALIDATE_INT);
   $student_user_id = $_SESSION['user_id'];
 
-  // ✅ NEW: Updated SQL to fetch the 'show_results_immediately' flag from the quiz.
+  // âœ… NEW: Updated SQL to fetch the 'show_results_immediately' flag from the quiz.
   $sql = "SELECT sa.*, 
                  q.title as quiz_title, 
                  q.config_easy_count, 
@@ -31,7 +31,7 @@
       exit();
   }
 
-  // ✅ NEW: CRITICAL CHECK! See if results have been released by the faculty.
+  // âœ… NEW: CRITICAL CHECK! See if results have been released by the faculty.
   if (!$attempt['show_results_immediately']) {
       // If the flag is FALSE (0), show a pending message and stop the script.
       echo '<div class="lobby-container">

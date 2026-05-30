@@ -1,10 +1,10 @@
-<?php
+﻿<?php
   $pageTitle = 'Admin Dashboard';
   require_once '../../assets/templates/header.php';
 
   // --- Authorization Check for Admin (role_id = 1) ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
-      header('Location: login.php');
+      redirect('login.php');
       exit();
   }
   
@@ -33,19 +33,20 @@
 </div>
 
 <script>
+const BASE_URL = '<?= get_base_url() ?>';
 // This script remains the same to load the stats
 document.addEventListener('DOMContentLoaded', async function() {
     try {
-        const response = await fetch('api/admin/get_dashboard_stats.php');
+        const response = await fetch(BASE_URL + 'api/admin/get_dashboard_stats.php');
         if (!response.ok) throw new Error('Failed to fetch stats.');
         const stats = await response.json();
         
         const grid = document.getElementById('dashboard-grid');
         grid.innerHTML = `
-            <div class="dashboard-card card-students"><div class="card-icon">🎓</div><div class="card-info"><p class="card-title">Total Students</p><p class="card-number">${stats.students || 0}</p></div></div>
-            <div class="dashboard-card card-faculty"><div class="card-icon">🧑‍🏫</div><div class="card-info"><p class="card-title">Total Faculty</p><p class="card-number">${stats.faculty || 0}</p></div></div>
-            <div class="dashboard-card card-quizzes"><div class="card-icon">📝</div><div class="card-info"><p class="card-title">Total Quizzes</p><p class="card-number">${stats.quizzes || 0}</p></div></div>
-            <div class="dashboard-card card-active"><div class="card-icon">🔴</div><div class="card-info"><p class="card-title">Active Quizzes</p><p class="card-number">${stats.active_quizzes || 0}</p></div></div>
+            <div class="dashboard-card card-students"><div class="card-icon">&#127891;</div><div class="card-info"><p class="card-title">Total Students</p><p class="card-number">${stats.students || 0}</p></div></div>
+            <div class="dashboard-card card-faculty"><div class="card-icon">&#129489;&#8205;&#127979;</div><div class="card-info"><p class="card-title">Total Faculty</p><p class="card-number">${stats.faculty || 0}</p></div></div>
+            <div class="dashboard-card card-quizzes"><div class="card-icon">&#128221;</div><div class="card-info"><p class="card-title">Total Quizzes</p><p class="card-number">${stats.quizzes || 0}</p></div></div>
+            <div class="dashboard-card card-active"><div class="card-icon">&#128308;</div><div class="card-info"><p class="card-title">Active Quizzes</p><p class="card-number">${stats.active_quizzes || 0}</p></div></div>
         `;
 
     } catch (error) {
