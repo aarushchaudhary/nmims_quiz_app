@@ -85,6 +85,21 @@ main {
   background-color: #cc0000;
 }
 
+.back-button {
+  text-decoration: none;
+  color: white;
+  background-color: #555;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+  background-color: #333;
+}
+
 .footer {
   width: 100%;
   background-color: white;
@@ -245,6 +260,33 @@ main {
   border-radius: 8px;
   font-size: 16px;
   background-color: #f9f9f9;
+}
+
+.form-group input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  transform: scale(1.2);
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.toggle-switch label {
+  margin-bottom: 0 !important;
+}
+
+.switch {
+  display: inline-block;
+}
+
+.slider {
+  display: none;
 }
 
 .form-row {
@@ -925,49 +967,62 @@ body.exam-mode {
   color: #333;
 }
 
-/* --- Exam Page Styles --- */
-.exam-container {
+/* --- Exam Page Styles (JEE/GATE-style) --- */
+
+/* Two-panel wrapper */
+.exam-wrapper {
   width: 100%;
-  max-width: 900px;
+  max-width: 1300px;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 0;
   background-color: #fff;
-  border-radius: 15px;
+  border-radius: 10px;
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
-  padding: 30px 40px;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
+  min-height: 75vh;
 }
 
-.exam-header {
+/* Left Panel */
+.exam-left-panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #ddd;
+}
+
+.exam-question-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 25px;
+  padding: 12px 20px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  font-weight: bold;
 }
 
-.exam-header .question-counter {
-  font-size: 18px;
-  font-weight: bold;
+.exam-question-label {
+  font-size: 16px;
   color: #333;
 }
 
-.exam-header .timer {
-  font-size: 18px;
+.exam-question-header .timer {
+  font-size: 15px;
   font-weight: bold;
   background-color: #e60000;
   color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 6px;
 }
 
-.question-area {
-  margin-bottom: 30px;
+.exam-question-body {
+  flex-grow: 1;
+  padding: 25px 30px;
+  overflow-y: auto;
 }
 
 .question-text {
-  font-size: 20px;
-  line-height: 1.5;
+  font-size: 18px;
+  line-height: 1.6;
   color: #333;
   margin-bottom: 25px;
 }
@@ -975,14 +1030,15 @@ body.exam-mode {
 .options-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 15px;
+  gap: 12px;
 }
 
 .option-label {
-  display: block;
+  display: flex;
+  align-items: center;
   background-color: #f8f9fa;
   border: 2px solid #dee2e6;
-  padding: 15px 20px;
+  padding: 14px 18px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
@@ -991,22 +1047,20 @@ body.exam-mode {
 
 .option-label:hover {
   border-color: #e60000;
+  background-color: #fff5f5;
 }
 
 .option-label input {
-  margin-right: 12px;
+  margin-right: 14px;
+  flex-shrink: 0;
+  transform: scale(1.15);
 }
 
-.option-label input:checked+span {
+.option-label input:checked + span {
   font-weight: bold;
 }
 
-.option-label.selected {
-  background-color: #ffeeba;
-  border-color: #ffc107;
-}
-
-/* --- Descriptive Answer Textarea --- */
+/* Descriptive answer textarea */
 .descriptive-answer-area {
   width: 100%;
   min-height: 150px;
@@ -1021,28 +1075,259 @@ body.exam-mode {
   -ms-user-select: text;
 }
 
-.exam-footer {
-  margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
+/* Action Buttons Row */
+.exam-action-buttons {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px;
+  border-top: 1px solid #ddd;
+  background-color: #f9f9f9;
 }
 
-.btn-next {
-  background-color: #28a745;
-  color: white;
-  padding: 12px 30px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
+.exam-btn {
+  padding: 10px 16px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: bold;
   cursor: pointer;
+  text-transform: uppercase;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
 }
 
-.btn-next:disabled {
-  background-color: #6c757d;
+.exam-btn:hover {
+  opacity: 0.85;
+}
+
+.exam-btn-save {
+  background-color: #e87e04;
+  color: white;
+}
+
+.exam-btn-save-mark {
+  background-color: #1a8a7d;
+  color: white;
+}
+
+.exam-btn-clear {
+  background-color: #fff;
+  color: #333;
+  border-color: #999;
+}
+
+.exam-btn-mark {
+  background-color: #1a8a7d;
+  color: white;
+}
+
+/* Bottom Navigation Bar */
+.exam-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 2px solid #ddd;
+  background-color: #eee;
+}
+
+.exam-nav-left {
+  display: flex;
+  gap: 10px;
+}
+
+.exam-nav-btn {
+  padding: 10px 20px;
+  border: 1px solid #999;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.exam-nav-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.exam-nav-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.exam-submit-btn {
+  background-color: #2196F3;
+  color: white;
+  border-color: #2196F3;
+  padding: 10px 30px;
+  font-size: 14px;
+}
+
+.exam-submit-btn:hover {
+  background-color: #1976D2;
+}
+
+/* Right Panel (Palette Sidebar) */
+.exam-right-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: #f9f9f9;
+  overflow-y: auto;
+}
+
+/* Status Legend */
+.palette-legend {
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+  background-color: #fff;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.legend-row:last-child {
+  margin-bottom: 0;
+}
+
+.legend-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  flex-shrink: 0;
+}
+
+.legend-not-visited {
+  background-color: #999;
+}
+
+.legend-not-answered {
+  background-color: #e60000;
+}
+
+.legend-answered {
+  background-color: #28a745;
+}
+
+.legend-marked {
+  background-color: #6f42c1;
+}
+
+.legend-answered-marked {
+  background-color: #6f42c1;
+  position: relative;
+}
+
+.legend-answered-marked::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background-color: #28a745;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+/* Question Palette Grid */
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  padding: 15px;
+}
+
+.palette-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background-color: #999;
+  color: white;
+}
+
+.palette-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.palette-btn.active {
+  outline: 3px solid #333;
+  outline-offset: 1px;
+}
+
+/* Palette button states */
+.palette-btn.state-not-visited {
+  background-color: #999;
+  color: white;
+}
+
+.palette-btn.state-not-answered {
+  background-color: #e60000;
+  color: white;
+}
+
+.palette-btn.state-answered {
+  background-color: #28a745;
+  color: white;
+}
+
+.palette-btn.state-marked {
+  background-color: #6f42c1;
+  color: white;
+}
+
+.palette-btn.state-answered-marked {
+  background-color: #6f42c1;
+  color: white;
+}
+
+.palette-btn.state-answered-marked::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background-color: #28a745;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+/* Responsive: stack panels vertically on small screens */
+@media (max-width: 900px) {
+  .exam-wrapper {
+    grid-template-columns: 1fr;
+  }
+  .exam-left-panel {
+    border-right: none;
+    border-bottom: 2px solid #ddd;
+  }
+  .palette-grid {
+    grid-template-columns: repeat(10, 1fr);
+  }
 }
 
 /* --- Overlays & Modals --- */

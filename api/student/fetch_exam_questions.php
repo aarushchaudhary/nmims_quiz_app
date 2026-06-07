@@ -82,7 +82,7 @@ try {
 
         foreach ($difficulty_map as $diff_id => $count_needed) {
             if ($count_needed > 0) {
-                $sql_q = "SELECT id, question_text, question_type_id FROM questions WHERE quiz_id = ? AND difficulty_id = ?";
+                $sql_q = "SELECT id, question_text, question_type_id, points FROM questions WHERE quiz_id = ? AND difficulty_id = ?";
                 $stmt_q = $pdo->prepare($sql_q);
                 $stmt_q->execute([$quiz_id, $diff_id]);
                 $available_questions = $stmt_q->fetchAll(PDO::FETCH_ASSOC);
@@ -105,16 +105,7 @@ try {
             $final_questions[$key]['options'] = $stmt_options->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        // **MODIFIED:** Add the final confirmation "dummy" question
-        $final_questions[] = [
-            'id' => 'final_submit', // A unique identifier for the frontend
-            'question_text' => 'You have reached the end of the exam. Please confirm to submit your attempt.',
-            'question_type_id' => 1, // Treat it like a Multiple Choice question for consistent handling
-            'options' => [
-                ['id' => 'yes', 'option_text' => 'Yes, submit my exam.'],
-                ['id' => 'no', 'option_text' => 'No, I want to review my answers.']
-            ]
-        ];
+        // Submit confirmation is now handled by the frontend's explicit Submit button
         
         $questions_with_options = $final_questions;
         
@@ -134,7 +125,14 @@ try {
     echo json_encode([
         'attempt_id' => $attempt_id,
         'remaining_seconds' => $remaining_seconds,
-        'questions' => $questions_with_options
+        'questions' => $questions_with_options,
+        'config' => [
+            'allow_calculator' => (bool)$quiz_config['allow_calculator'],
+            'enable_negative_marking' => (bool)$quiz_config['enable_negative_marking'],
+            'negative_marks_mcq' => (float)$quiz_config['negative_marks_mcq'],
+            'negative_marks_msq' => (float)$quiz_config['negative_marks_msq'],
+            'negative_marks_descriptive' => (float)$quiz_config['negative_marks_descriptive']
+        ]
     ]);
 
 } catch (Exception $e) {

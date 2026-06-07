@@ -31,6 +31,14 @@ require_once __DIR__ . '/../../config/base_url.php';
             if (isset($_SESSION['user_id']) && (!isset($isExamPage) || $isExamPage !== true)): 
             ?>
 
+                <?php
+                // Show Back button on all pages EXCEPT student pages
+                $currentScript = $_SERVER['SCRIPT_FILENAME'] ?? '';
+                $isStudentPage = strpos(str_replace('\\', '/', $currentScript), '/views/student/') !== false;
+                if (!$isStudentPage):
+                ?>
+                <a href="javascript:history.back()" class="back-button">&#8592; Back</a>
+                <?php endif; ?>
                 
                 <a href="<?= get_base_url() ?>index.php" class="home-button">Home</a>
                 <a href="<?= get_base_url() ?>logout.php" class="logout-button">Logout</a>

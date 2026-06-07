@@ -18,7 +18,7 @@ $required_fields = [
 ];
 
 foreach ($required_fields as $field) {
-    if (empty($_POST[$field])) {
+    if (!isset($_POST[$field]) || $_POST[$field] === '') {
         // Redirect back with an error message
         header('Location: ' . $_SERVER['HTTP_REFERER'] . '&error=missing_fields');
         exit();
@@ -34,6 +34,21 @@ $start_time = $_POST['start_time'];
 $end_time = $_POST['end_time'];
 $duration_minutes = filter_var($_POST['duration_minutes'], FILTER_VALIDATE_INT);
 
+// --- Time Validation ---
+$start_timestamp = strtotime($start_time);
+$end_timestamp = strtotime($end_time);
+
+if ($end_timestamp <= $start_timestamp) {
+    header('Location: ../../views/faculty/edit_quiz.php?id=' . $quiz_id . '&error=invalid_time');
+    exit();
+}
+
+$max_duration = floor(($end_timestamp - $start_timestamp) / 60);
+if ($duration_minutes > $max_duration) {
+    header('Location: ../../views/faculty/edit_quiz.php?id=' . $quiz_id . '&error=duration_exceeded');
+    exit();
+}
+
 // Optional Fields
 $sap_id_start = !empty($_POST['sap_id_range_start']) ? filter_var($_POST['sap_id_range_start'], FILTER_SANITIZE_NUMBER_INT) : null;
 $sap_id_end = !empty($_POST['sap_id_range_end']) ? filter_var($_POST['sap_id_range_end'], FILTER_SANITIZE_NUMBER_INT) : null;
@@ -45,6 +60,11 @@ $config_easy_count = filter_var($_POST['config_easy_count'], FILTER_VALIDATE_INT
 $config_medium_count = filter_var($_POST['config_medium_count'], FILTER_VALIDATE_INT);
 $config_hard_count = filter_var($_POST['config_hard_count'], FILTER_VALIDATE_INT);
 $show_results_immediately = isset($_POST['show_results_immediately']) ? 1 : 0;
+$allow_calculator = isset($_POST['allow_calculator']) ? 1 : 0;
+$enable_negative_marking = isset($_POST['enable_negative_marking']) ? 1 : 0;
+$negative_marks_mcq = !empty($_POST['negative_marks_mcq']) ? filter_var($_POST['negative_marks_mcq'], FILTER_VALIDATE_FLOAT) : 0.00;
+$negative_marks_msq = !empty($_POST['negative_marks_msq']) ? filter_var($_POST['negative_marks_msq'], FILTER_VALIDATE_FLOAT) : 0.00;
+$negative_marks_descriptive = !empty($_POST['negative_marks_descriptive']) ? filter_var($_POST['negative_marks_descriptive'], FILTER_VALIDATE_FLOAT) : 0.00;
 $faculty_id = $_SESSION['user_id'];
 
 // --- Database Update ---
@@ -61,7 +81,12 @@ $sql = "UPDATE quizzes SET
             config_medium_count = :medium_count,
             config_hard_count = :hard_count,
             show_results_immediately = :show_results,
-            specialization_id = :specialization_id
+            specialization_id = :specialization_id,
+            allow_calculator = :allow_calculator,
+            enable_negative_marking = :enable_negative_marking,
+            negative_marks_mcq = :negative_marks_mcq,
+            negative_marks_msq = :negative_marks_msq,
+            negative_marks_descriptive = :negative_marks_descriptive
         WHERE id = :quiz_id AND faculty_id = :faculty_id"; // Security check to ensure ownership
 
 try {
@@ -80,6 +105,11 @@ try {
         ':hard_count' => $config_hard_count,
         ':show_results' => $show_results_immediately,
         ':specialization_id' => $specialization_id,
+        ':allow_calculator' => $allow_calculator,
+        ':enable_negative_marking' => $enable_negative_marking,
+        ':negative_marks_mcq' => $negative_marks_mcq,
+        ':negative_marks_msq' => $negative_marks_msq,
+        ':negative_marks_descriptive' => $negative_marks_descriptive,
         ':quiz_id' => $quiz_id,
         ':faculty_id' => $faculty_id
     ]);

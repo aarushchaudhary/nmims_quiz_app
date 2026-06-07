@@ -126,9 +126,43 @@
     <div class="form-group toggle-switch">
       <label for="show_results_immediately">Show Results to Students Immediately?</label>
       <label class="switch">
-        <input type="checkbox" id="show_results_immediately" name="show_results_immediately" checked>
+        <input type="checkbox" id="show_results_immediately" name="show_results_immediately">
         <span class="slider"></span>
       </label>
+    </div>
+
+    <!-- NEW: Calculator Toggle -->
+    <div class="form-group toggle-switch">
+      <label for="allow_calculator">Allow Calculator during Exam?</label>
+      <label class="switch">
+        <input type="checkbox" id="allow_calculator" name="allow_calculator">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- NEW: Negative Marking Toggle -->
+    <div class="form-group toggle-switch">
+      <label for="enable_negative_marking">Enable Negative Marking?</label>
+      <label class="switch">
+        <input type="checkbox" id="enable_negative_marking" name="enable_negative_marking">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- NEW: Negative Marks Inputs (hidden by default) -->
+    <div class="form-row" id="negative_marks_row" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="negative_marks_mcq">MCQ</label>
+        <input type="number" id="negative_marks_mcq" name="negative_marks_mcq" min="0" step="0.25" value="0.00" class="input-field">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="negative_marks_msq">MSQ</label>
+        <input type="number" id="negative_marks_msq" name="negative_marks_msq" min="0" step="0.25" value="0.00" class="input-field">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="negative_marks_descriptive">Descriptive</label>
+        <input type="number" id="negative_marks_descriptive" name="negative_marks_descriptive" min="0" step="0.25" value="0.00" class="input-field">
+      </div>
     </div>
 
     <div class="form-group" style="text-align: center; margin-top: 30px;">
@@ -190,6 +224,19 @@ document.addEventListener('DOMContentLoaded', function() {
             yearSelect.add(option);
         });
         yearSelect.disabled = false;
+      
+    });
+
+    // Toggle Negative Marks visibility
+    $('#enable_negative_marking').on('change', function() {
+        if($(this).is(':checked')) {
+            $('#negative_marks_row').slideDown();
+        } else {
+            $('#negative_marks_row').slideUp();
+            $('#negative_marks_mcq').val('0.00');
+            $('#negative_marks_msq').val('0.00');
+            $('#negative_marks_descriptive').val('0.00');
+        }
     });
 });
 </script>

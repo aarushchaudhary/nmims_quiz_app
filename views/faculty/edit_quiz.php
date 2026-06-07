@@ -103,7 +103,6 @@
 
     <div class="form-row">
       <div class="form-group"><label>Start Time</label><input type="datetime-local" name="start_time" value="<?php echo format_datetime_for_input($quiz['start_time']); ?>" required></div>
-      <div class="form-group"><label>End Time</label><input type="datetime-local" name="end_time" value="<?php echo format_datetime_for_input($quiz['end_time']); ?>" required></div>
       <div class="form-group"><label>Duration (Minutes)</label><input type="number" name="duration_minutes" value="<?php echo htmlspecialchars($quiz['duration_minutes']); ?>" min="1" required></div>
     </div>
     <hr style="margin: 25px 0;">
@@ -146,6 +145,40 @@
             <input type="checkbox" id="show_results_immediately" name="show_results_immediately" <?= $is_results_immediate_checked ?>>
             <span class="slider"></span>
         </label>
+    </div>
+
+    <!-- NEW: Calculator Toggle -->
+    <div class="form-group toggle-switch">
+      <label for="allow_calculator">Allow Calculator during Exam?</label>
+      <label class="switch">
+        <input type="checkbox" id="allow_calculator" name="allow_calculator" <?= $quiz['allow_calculator'] ? 'checked' : '' ?>>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- NEW: Negative Marking Toggle -->
+    <div class="form-group toggle-switch">
+      <label for="enable_negative_marking">Enable Negative Marking?</label>
+      <label class="switch">
+        <input type="checkbox" id="enable_negative_marking" name="enable_negative_marking" <?= $quiz['enable_negative_marking'] ? 'checked' : '' ?>>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- NEW: Negative Marks Inputs (hidden by default unless enabled) -->
+    <div class="form-row" id="negative_marks_row" style="<?= $quiz['enable_negative_marking'] ? '' : 'display: none;' ?> background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="negative_marks_mcq">MCQ</label>
+        <input type="number" id="negative_marks_mcq" name="negative_marks_mcq" min="0" step="0.25" value="<?= htmlspecialchars($quiz['negative_marks_mcq']) ?>" class="input-field">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="negative_marks_msq">MSQ</label>
+        <input type="number" id="negative_marks_msq" name="negative_marks_msq" min="0" step="0.25" value="<?= htmlspecialchars($quiz['negative_marks_msq']) ?>" class="input-field">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="negative_marks_descriptive">Descriptive</label>
+        <input type="number" id="negative_marks_descriptive" name="negative_marks_descriptive" min="0" step="0.25" value="<?= htmlspecialchars($quiz['negative_marks_descriptive']) ?>" class="input-field">
+      </div>
     </div>
 
     <div class="form-group" style="text-align: center; margin-top: 30px;">

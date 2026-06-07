@@ -52,7 +52,7 @@
   $total_pages = ceil($total_quizzes / $items_per_page);
 
   // --- Fetch Quizzes for the current page ---
-  $sql = "SELECT q.id, q.title, q.start_time, c.name as course_name, es.name as status_name
+  $sql = "SELECT q.id, q.title, q.start_time, q.end_time, q.show_results_immediately, c.name as course_name, es.name as status_name
           FROM quizzes q
           JOIN courses c ON q.course_id = c.id
           JOIN exam_statuses es ON q.status_id = es.id
@@ -155,6 +155,14 @@
                             <a href="edit_quiz.php?id=<?php echo $quiz['id']; ?>" class="btn-edit">Edit Details</a>
                             <a href="reports.php?quiz_id=<?php echo $quiz['id']; ?>" class="btn-reports">View Reports</a>
                             <a href="../shared/event_log_report.php?quiz_id=<?php echo $quiz['id']; ?>" class="btn-logs">View Logs</a>
+                            
+                            <?php 
+                                // Show "Publish Results" if results are not shown immediately and the test has ended
+                                if (!$quiz['show_results_immediately'] && strtotime($quiz['end_time']) < time()): 
+                            ?>
+                                <button class="btn-publish-results" style="background-color: #28a745; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; text-decoration: none; font-size: 13px;" data-quiz-id="<?php echo $quiz['id']; ?>">Publish Results</button>
+                            <?php endif; ?>
+
                             <button class="btn-delete-quiz" data-quiz-id="<?php echo $quiz['id']; ?>">Delete Quiz</button>
                         </td>
                     </tr>
@@ -252,6 +260,32 @@ document.addEventListener('DOMContentLoaded', function() {
             } finally {
                 modal.style.display = 'none';
                 quizIdToDelete = null;
+            }
+        }
+    });
+
+    // --- Publish Results Logic ---
+    quizTableBody.addEventListener('click', async function(e) {
+        if (e.target && e.target.classList.contains('btn-publish-results')) {
+            const quizId = e.target.dataset.quizId;
+            if (confirm('Are you sure you want to publish the results for this exam? Students will be able to view their scores and answers immediately.')) {
+                try {
+                    const response = await fetch(BASE_URL+'api/faculty/publish_results.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ quiz_id: quizId })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Results published successfully!');
+                        // Remove the button dynamically or reload
+                        e.target.remove();
+                    } else {
+                        throw new Error(result.error || 'Failed to publish results.');
+                    }
+                } catch (error) {
+                    alert(`Error: ${error.message}`);
+                }
             }
         }
     });

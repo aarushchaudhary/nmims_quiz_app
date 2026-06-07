@@ -37,6 +37,11 @@ try {
     } else {
         // --- Handle Normal Exam Finish ---
         // 1. Grade the student's answers and calculate the score
+        // Fetch Quiz Config for negative marking
+        $stmt_quiz = $pdo->prepare("SELECT enable_negative_marking, negative_marks_mcq, negative_marks_msq FROM quizzes JOIN student_attempts ON quizzes.id = student_attempts.quiz_id WHERE student_attempts.id = ?");
+        $stmt_quiz->execute([$attempt_id]);
+        $quiz_config = $stmt_quiz->fetch(PDO::FETCH_ASSOC);
+
         $stmt_answers = $pdo->prepare(
             "SELECT sa.id, sa.question_id, sa.selected_option_ids, q.question_type_id, q.points 
              FROM student_answers sa 
@@ -63,8 +68,18 @@ try {
                 if (!empty($selected_ids) && $selected_ids == $correct_ids) {
                     $is_correct_value = 1;
                     $total_score += $answer['points'];
-                } else {
+                } else if (!empty($selected_ids)) {
                     $is_correct_value = 0;
+                    // Apply Negative Marking for incorrect answers
+                    if ($quiz_config['enable_negative_marking']) {
+                        if ($answer['question_type_id'] == 1) {
+                            $total_score -= $quiz_config['negative_marks_mcq'];
+                        } else if ($answer['question_type_id'] == 2) {
+                            $total_score -= $quiz_config['negative_marks_msq'];
+                        }
+                    }
+                } else {
+                    $is_correct_value = 0; // Unanswered
                 }
             }
             $stmt_update_answer->execute([$is_correct_value, $answer['id']]);
