@@ -116,14 +116,16 @@ try {
     foreach ($students as $student) {
         $status = 'Not Started';
         $progress = 'N/A';
+        if ($student['attempt_id']) {
+            $answered_count = $progress_data[$student['attempt_id']] ?? 0;
+            $progress = "{$answered_count} / {$total_questions}";
+        }
+
         if ($student['is_manually_locked']) { $status = 'Locked'; }
         elseif ($student['is_disqualified']) { $status = 'Disqualified'; }
         elseif ($student['submitted_at']) { $status = 'Finished'; }
-        elseif ($student['attempt_id']) {
-            $status = 'In Progress';
-            $answered_count = $progress_data[$student['attempt_id']] ?? 0;
-            $progress = "{$answered_count} / {$total_questions}";
-        } elseif (in_array($student['user_id'], $lobby_students)) {
+        elseif ($student['attempt_id']) { $status = 'In Progress'; }
+        elseif (in_array($student['user_id'], $lobby_students)) {
             $status = 'In Lobby';
         }
         $monitoring_data[] = [

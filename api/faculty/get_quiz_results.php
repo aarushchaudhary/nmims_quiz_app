@@ -31,7 +31,8 @@ try {
                 sa.total_score,
                 sa.started_at,
                 sa.submitted_at,
-                sa.is_disqualified
+                sa.is_disqualified,
+                q.show_results_immediately
             FROM student_attempts sa
             LEFT JOIN students st ON sa.student_id = st.user_id
             JOIN quizzes q ON sa.quiz_id = q.id
@@ -41,6 +42,8 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([':quiz_id' => $quiz_id, ':faculty_id' => $faculty_id]);
     $results = $stmt->fetchAll();
+    
+    $is_published = !empty($results) ? (bool)$results[0]['show_results_immediately'] : false;
 
     // Calculate summary statistics
     $total_attempts = count($results);
@@ -65,7 +68,8 @@ try {
         'summary' => [
             'total_attempts' => $total_attempts,
             'average_score' => number_format($average_score, 2),
-            'disqualified_count' => $disqualified_count
+            'disqualified_count' => $disqualified_count,
+            'is_published' => $is_published
         ],
         'details' => $results
     ]);

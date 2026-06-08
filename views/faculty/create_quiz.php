@@ -123,13 +123,7 @@
       <div class="form-group"><label for="hard_count">Hard Questions</label><input type="number" id="hard_count" name="config_hard_count" min="0" value="0" required></div>
     </div>
 
-    <div class="form-group toggle-switch">
-      <label for="show_results_immediately">Show Results to Students Immediately?</label>
-      <label class="switch">
-        <input type="checkbox" id="show_results_immediately" name="show_results_immediately">
-        <span class="slider"></span>
-      </label>
-    </div>
+    <!-- 'Show Results Immediately' removed to enforce manual publishing only via Reports button -->
 
     <!-- NEW: Calculator Toggle -->
     <div class="form-group toggle-switch">

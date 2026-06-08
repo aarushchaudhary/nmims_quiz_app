@@ -139,13 +139,7 @@
       <div class="form-group"><label>Hard Questions</label><input type="number" name="config_hard_count" value="<?php echo htmlspecialchars($quiz['config_hard_count']); ?>" min="0" required></div>
     </div>
 
-    <div class="form-group toggle-switch">
-        <label for="show_results_immediately">Show Results to Students Immediately?</label>
-        <label class="switch">
-            <input type="checkbox" id="show_results_immediately" name="show_results_immediately" <?= $is_results_immediate_checked ?>>
-            <span class="slider"></span>
-        </label>
-    </div>
+    <!-- 'Show Results Immediately' removed to enforce manual publishing only via Reports button -->
 
     <!-- NEW: Calculator Toggle -->
     <div class="form-group toggle-switch">

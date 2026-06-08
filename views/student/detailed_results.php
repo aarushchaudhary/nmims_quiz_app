@@ -44,22 +44,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             card.className = 'question-review-card';
             
             let optionsHtml = '';
-            item.options.forEach(option => {
-                const isSelected = item.student_selection.includes(option.id.toString());
-                const isCorrect = option.is_correct == 1;
-                
-                let classes = 'review-option';
-                if (isCorrect) {
-                    classes += ' correct-answer';
-                }
-                if (isSelected) {
-                    classes += ' selected';
-                    if (!isCorrect) {
-                        classes += ' incorrect-answer';
+            if (item.question_type_id == 3) {
+                optionsHtml = `<div style="background:#f9f9f9; padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 10px; white-space: pre-wrap;"><strong>Your Answer:</strong><br/>${item.answer_text ? item.answer_text : '<em>No answer provided</em>'}</div>`;
+            } else {
+                item.options.forEach(option => {
+                    const isSelected = item.student_selection.includes(option.id.toString());
+                    const isCorrect = option.is_correct == 1;
+                    
+                    let classes = 'review-option';
+                    if (isCorrect) {
+                        classes += ' correct-answer';
                     }
-                }
-                optionsHtml += `<div class="${classes}">${option.option_text}</div>`;
-            });
+                    if (isSelected) {
+                        classes += ' selected';
+                        if (!isCorrect) {
+                            classes += ' incorrect-answer';
+                        }
+                    }
+                    optionsHtml += `<div class="${classes}">${option.option_text}</div>`;
+                });
+            }
 
             card.innerHTML = `
                 <h4>Question ${index + 1}: ${item.question_text}</h4>

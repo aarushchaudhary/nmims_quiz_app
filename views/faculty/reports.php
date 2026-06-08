@@ -81,6 +81,7 @@
             <a href="#" id="analysis-btn" class="button-red" style="display:none; width:auto; padding: 10px 20px; background-color: #6f42c1;">Item Analysis</a>
             <a href="#" id="evaluate-btn" class="button-red" style="display:none; width:auto; padding: 10px 20px; background-color: #ffc107; color: #333;">Evaluate Answers</a>
             <a href="#" id="export-btn" class="button-red" style="display:none; width:auto; padding: 10px 20px; background-color: #17a2b8;">Export to Excel</a>
+            <button id="publish-results-btn" class="button-red" style="display:none; width:auto; padding: 10px 20px; background-color: #28a745; color: white; border: none; cursor: pointer;">Publish Results</button>
         </div>
     </div>
 
@@ -129,11 +130,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportBtn = document.getElementById('export-btn');
     const evaluateBtn = document.getElementById('evaluate-btn');
     const analysisBtn = document.getElementById('analysis-btn');
+    const publishBtn = document.getElementById('publish-results-btn');
     
     async function loadReport(quizId) {
         if (!quizId) {
             reportContent.style.display = 'none';
-            [exportBtn, evaluateBtn, analysisBtn].forEach(btn => btn.style.display = 'none');
+            [exportBtn, evaluateBtn, analysisBtn, publishBtn].forEach(btn => btn.style.display = 'none');
             placeholder.textContent = 'Please select a quiz to view the report.';
             placeholder.style.display = 'block';
             return;
@@ -170,6 +172,22 @@ document.addEventListener('DOMContentLoaded', function() {
             evaluateBtn.href = `evaluate_descriptive.php?quiz_id=${quizId}`;
             analysisBtn.href = `item_analysis.php?quiz_id=${quizId}`;
             [exportBtn, evaluateBtn, analysisBtn].forEach(btn => btn.style.display = 'inline-block');
+            
+            if (data.summary.is_published) {
+                publishBtn.style.display = 'inline-block';
+                publishBtn.style.backgroundColor = '#6c757d';
+                publishBtn.textContent = 'Results Published';
+                publishBtn.disabled = true;
+                publishBtn.style.cursor = 'default';
+            } else if (data.summary.total_attempts > 0) {
+                publishBtn.style.display = 'inline-block';
+                publishBtn.style.backgroundColor = '#28a745';
+                publishBtn.textContent = 'Publish Results';
+                publishBtn.disabled = false;
+                publishBtn.style.cursor = 'pointer';
+            } else {
+                publishBtn.style.display = 'none';
+            }
         } catch (error) {
             console.error("Error loading report:", error);
             placeholder.textContent = `Error: ${error.message}`;
@@ -177,6 +195,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     quizSelector.addEventListener('change', function() { loadReport(this.value); });
     if (quizSelector.value) { loadReport(quizSelector.value); }
+
+    publishBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        const quizId = quizSelector.value;
+        if (!quizId) return;
+        
+        if (confirm('Are you sure you want to publish the results for this exam? Students will be able to view their scores and answers immediately.')) {
+            try {
+                publishBtn.disabled = true;
+                publishBtn.textContent = 'Publishing...';
+                const response = await fetch(BASE_URL + 'api/faculty/publish_results.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quiz_id: quizId })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Results published successfully!');
+                    publishBtn.style.backgroundColor = '#6c757d';
+                    publishBtn.textContent = 'Results Published';
+                    publishBtn.style.cursor = 'default';
+                } else {
+                    throw new Error(result.error || 'Failed to publish results.');
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                publishBtn.disabled = false;
+                publishBtn.textContent = 'Publish Results';
+            }
+        }
+    });
 });
 </script>
 

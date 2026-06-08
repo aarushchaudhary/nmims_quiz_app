@@ -80,6 +80,20 @@
       $stmt_quizzes->execute($params);
       
       $quizzes = $stmt_quizzes->fetchAll();
+      
+      // --- NEW: Fetch Published Results ---
+      $sql_published = "SELECT q.id as quiz_id, q.title, sa.id as attempt_id, sa.total_score, sa.submitted_at 
+                        FROM student_attempts sa
+                        JOIN quizzes q ON sa.quiz_id = q.id
+                        WHERE sa.student_id = :student_user_id 
+                        AND sa.submitted_at IS NOT NULL 
+                        AND q.show_results_immediately = 1
+                        ORDER BY sa.submitted_at DESC";
+      $stmt_published = $pdo->prepare($sql_published);
+      $stmt_published->execute([':student_user_id' => $student_user_id]);
+      $published_results = $stmt_published->fetchAll();
+  } else {
+      $published_results = [];
   }
 ?>
 
@@ -120,6 +134,38 @@
                                     echo '<span style="color: #6c757d;">Waiting for faculty...</span>';
                                 }
                             ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+
+    <h2 style="margin-top: 40px; margin-bottom: 10px;">Your Published Results</h2>
+    <p style="text-align:center; color: #555; margin-top:0;">These are your past exams where the faculty has released the results.</p>
+    
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Quiz Title</th>
+                <th>Date Taken</th>
+                <th>Score</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($published_results)): ?>
+                <tr>
+                    <td colspan="4" style="text-align:center; padding: 20px;">No published results available yet.</td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($published_results as $result): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($result['title']); ?></td>
+                        <td><?php echo date('M j, Y, g:i A', strtotime($result['submitted_at'])); ?></td>
+                        <td style="font-weight: bold; color: #28a745;"><?php echo htmlspecialchars(number_format($result['total_score'], 2)); ?></td>
+                        <td class="action-buttons">
+                            <a href="results.php?attempt_id=<?php echo $result['attempt_id']; ?>" class="btn-manage" style="background-color: #17a2b8;">View Results</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>

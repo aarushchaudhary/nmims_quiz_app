@@ -36,6 +36,24 @@ try {
         $stmt->execute([$attempt_id]);
     } else {
         // --- Handle Normal Exam Finish ---
+        // 0. Ensure all assigned questions exist in student_answers so missing ones are properly categorized
+        $stmt_attempt_info = $pdo->prepare("SELECT questions_json FROM student_attempts WHERE id = ?");
+        $stmt_attempt_info->execute([$attempt_id]);
+        $attempt_info = $stmt_attempt_info->fetch(PDO::FETCH_ASSOC);
+        $assigned_questions = json_decode($attempt_info['questions_json'], true) ?? [];
+
+        $stmt_answered_ids = $pdo->prepare("SELECT question_id FROM student_answers WHERE attempt_id = ?");
+        $stmt_answered_ids->execute([$attempt_id]);
+        $answered_ids = $stmt_answered_ids->fetchAll(PDO::FETCH_COLUMN, 0);
+
+        $stmt_insert_blank = $pdo->prepare("INSERT INTO student_answers (attempt_id, question_id, selected_option_ids, answer_text, time_spent_seconds, is_correct) VALUES (?, ?, '[]', '', 0, null)");
+
+        foreach ($assigned_questions as $q) {
+            if (!in_array($q['id'], $answered_ids)) {
+                $stmt_insert_blank->execute([$attempt_id, $q['id']]);
+            }
+        }
+
         // 1. Grade the student's answers and calculate the score
         // Fetch Quiz Config for negative marking
         $stmt_quiz = $pdo->prepare("SELECT enable_negative_marking, negative_marks_mcq, negative_marks_msq FROM quizzes JOIN student_attempts ON quizzes.id = student_attempts.quiz_id WHERE student_attempts.id = ?");
@@ -65,22 +83,39 @@ try {
                 $correct_ids = $stmt_correct->fetchAll(PDO::FETCH_COLUMN, 0);
                 sort($selected_ids);
                 sort($correct_ids);
-                if (!empty($selected_ids) && $selected_ids == $correct_ids) {
+                
+                if (empty($selected_ids)) {
+                    $is_correct_value = null; // Unanswered
+                } else if ($selected_ids == $correct_ids) {
                     $is_correct_value = 1;
                     $total_score += $answer['points'];
-                } else if (!empty($selected_ids)) {
-                    $is_correct_value = 0;
-                    // Apply Negative Marking for incorrect answers
-                    if ($quiz_config['enable_negative_marking']) {
-                        if ($answer['question_type_id'] == 1) {
+                } else {
+                    // Check for partial correctness on MSQ
+                    if ($answer['question_type_id'] == 2) {
+                        $correct_selections = array_intersect($selected_ids, $correct_ids);
+                        
+                        // If they selected at least one correct option, it's partially correct
+                        if (!empty($correct_selections)) {
+                            $is_correct_value = 2; // Partially correct
+                            $partial_points = ($answer['points'] / count($correct_ids)) * count($correct_selections);
+                            $total_score += $partial_points;
+                        } else {
+                            $is_correct_value = 0; // Incorrect
+                            if ($quiz_config['enable_negative_marking']) {
+                                $total_score -= $quiz_config['negative_marks_msq'];
+                            }
+                        }
+                    } else {
+                        // MCQ
+                        $is_correct_value = 0; // Incorrect
+                        if ($quiz_config['enable_negative_marking']) {
                             $total_score -= $quiz_config['negative_marks_mcq'];
-                        } else if ($answer['question_type_id'] == 2) {
-                            $total_score -= $quiz_config['negative_marks_msq'];
                         }
                     }
-                } else {
-                    $is_correct_value = 0; // Unanswered
                 }
+            } else if ($answer['question_type_id'] == 3) {
+                // Descriptive answers always come under 'To be evaluated'
+                $is_correct_value = 3;
             }
             $stmt_update_answer->execute([$is_correct_value, $answer['id']]);
         }

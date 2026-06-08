@@ -59,7 +59,7 @@ $specialization_id = !empty($_POST['specialization_id']) ? filter_var($_POST['sp
 $config_easy_count = filter_var($_POST['config_easy_count'], FILTER_VALIDATE_INT);
 $config_medium_count = filter_var($_POST['config_medium_count'], FILTER_VALIDATE_INT);
 $config_hard_count = filter_var($_POST['config_hard_count'], FILTER_VALIDATE_INT);
-$show_results_immediately = isset($_POST['show_results_immediately']) ? 1 : 0;
+// show_results_immediately removed to prevent overwriting existing published status
 $allow_calculator = isset($_POST['allow_calculator']) ? 1 : 0;
 $enable_negative_marking = isset($_POST['enable_negative_marking']) ? 1 : 0;
 $negative_marks_mcq = !empty($_POST['negative_marks_mcq']) ? filter_var($_POST['negative_marks_mcq'], FILTER_VALIDATE_FLOAT) : 0.00;
@@ -80,7 +80,6 @@ $sql = "UPDATE quizzes SET
             config_easy_count = :easy_count,
             config_medium_count = :medium_count,
             config_hard_count = :hard_count,
-            show_results_immediately = :show_results,
             specialization_id = :specialization_id,
             allow_calculator = :allow_calculator,
             enable_negative_marking = :enable_negative_marking,
@@ -103,7 +102,6 @@ try {
         ':easy_count' => $config_easy_count,
         ':medium_count' => $config_medium_count,
         ':hard_count' => $config_hard_count,
-        ':show_results' => $show_results_immediately,
         ':specialization_id' => $specialization_id,
         ':allow_calculator' => $allow_calculator,
         ':enable_negative_marking' => $enable_negative_marking,

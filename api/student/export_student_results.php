@@ -83,7 +83,18 @@ try {
         }
         $sheet->setCellValue('B' . $rowNum, $your_answer);
 
-        $result_text = ($row['is_correct'] === null) ? 'Pending Review' : ($row['is_correct'] ? 'Correct' : 'Incorrect');
+        $result_text = '';
+        if ($row['is_correct'] === null) {
+            $result_text = 'Unanswered';
+        } else if ($row['is_correct'] == 1) {
+            $result_text = 'Correct';
+        } else if ($row['is_correct'] == 2) {
+            $result_text = 'Partially Correct';
+        } else if ($row['is_correct'] == 3) {
+            $result_text = 'To be Evaluated';
+        } else {
+            $result_text = 'Incorrect';
+        }
         $sheet->setCellValue('C' . $rowNum, $result_text);
         
         $rowNum++;

@@ -147,6 +147,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 throw new Error('This quiz has no questions. Please contact your faculty.');
             }
 
+            // Add dummy question to prevent submit race condition on last question
+            examState.questions.push({
+                id: 'dummy_submit',
+                question_text: 'You have reached the end of the exam. Please review your answers using the palette on the right, or click SUBMIT below to finish your exam.',
+                question_type_id: 'dummy',
+                options: [],
+                points: 0
+            });
+
             // Initialize per-question state
             examState.answers = examState.questions.map(() => ({ selectedOptionIds: [], answerText: '' }));
             examState.statuses = examState.questions.map(() => 'not_visited');
@@ -185,6 +194,41 @@ document.addEventListener('DOMContentLoaded', async function() {
         const idx = examState.currentQuestionIndex;
         const q = examState.questions[idx];
         const savedAnswer = examState.answers[idx];
+
+        if (q.id === 'dummy_submit') {
+            ui.questionLabel.textContent = `End of Exam`;
+            ui.questionMarkingScheme.textContent = ``;
+            ui.questionText.textContent = q.question_text;
+            ui.optionsGrid.innerHTML = `
+                <div style="text-align: center; margin-top: 30px;">
+                    <button id="dummy-submit-btn" style="padding: 15px 30px; font-size: 18px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        SUBMIT EXAM
+                    </button>
+                </div>
+            `;
+            document.getElementById('dummy-submit-btn').addEventListener('click', () => {
+                showSubmitModal();
+            });
+
+            ui.backBtn.disabled = false;
+            ui.nextBtn.disabled = true;
+
+            // Hide action buttons
+            ui.saveNextBtn.style.display = 'none';
+            ui.saveMarkBtn.style.display = 'none';
+            ui.clearBtn.style.display = 'none';
+            ui.markNextBtn.style.display = 'none';
+
+            examState.questionStartTime = Date.now();
+            updatePalette();
+            return;
+        } else {
+            ui.saveNextBtn.style.display = 'inline-block';
+            ui.saveMarkBtn.style.display = 'inline-block';
+            ui.clearBtn.style.display = 'inline-block';
+            ui.markNextBtn.style.display = 'inline-block';
+            ui.nextBtn.disabled = false;
+        }
 
         ui.questionLabel.textContent = `Question ${idx + 1}:`;
         
@@ -238,7 +282,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         examState.questions.forEach((q, i) => {
             const btn = document.createElement('button');
             btn.className = 'palette-btn';
-            btn.textContent = String(i + 1).padStart(2, '0');
+            if (q.id === 'dummy_submit') {
+                btn.textContent = 'Sub';
+                btn.style.backgroundColor = '#28a745';
+                btn.style.color = 'white';
+                btn.style.fontWeight = 'bold';
+            } else {
+                btn.textContent = String(i + 1).padStart(2, '0');
+            }
             btn.addEventListener('click', () => navigateTo(i));
             ui.paletteGrid.appendChild(btn);
         });
@@ -249,6 +300,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const counts = { not_visited: 0, not_answered: 0, answered: 0, marked: 0, answered_marked: 0 };
 
         buttons.forEach((btn, i) => {
+            if (examState.questions[i].id === 'dummy_submit') {
+                btn.className = 'palette-btn';
+                if (i === examState.currentQuestionIndex) {
+                    btn.classList.add('active');
+                }
+                btn.style.backgroundColor = '#28a745';
+                btn.style.color = 'white';
+                return;
+            }
+
             // Remove all state classes
             btn.className = 'palette-btn';
             const status = examState.statuses[i];
@@ -279,6 +340,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const idx = examState.currentQuestionIndex;
         const q = examState.questions[idx];
 
+        if (q.id === 'dummy_submit') return;
+
         if (q.question_type_id == 3) {
             const textarea = document.getElementById('descriptive-answer');
             examState.answers[idx].answerText = textarea ? textarea.value : '';
@@ -291,6 +354,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function hasAnswer(idx) {
         const q = examState.questions[idx];
+        if (q.id === 'dummy_submit') return false;
         const a = examState.answers[idx];
         if (q.question_type_id == 3) {
             return a.answerText.trim() !== '';
@@ -452,7 +516,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     function showSubmitModal() {
         // Build summary
         const counts = { not_visited: 0, not_answered: 0, answered: 0, marked: 0, answered_marked: 0 };
-        examState.statuses.forEach(s => counts[s]++);
+        examState.statuses.forEach((s, i) => {
+            if (examState.questions[i].id !== 'dummy_submit') {
+                counts[s]++;
+            }
+        });
 
         ui.submitSummary.innerHTML = `
             <div style="font-size: 16px; margin-bottom: 15px;"><strong>Summary:</strong></div>

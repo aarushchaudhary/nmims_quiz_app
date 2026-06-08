@@ -58,12 +58,20 @@
   $stmt_correct->execute([$attempt_id]);
   $correct_count = $stmt_correct->fetchColumn();
 
+  $stmt_partial = $pdo->prepare("SELECT COUNT(*) FROM student_answers WHERE attempt_id = ? AND is_correct = 2");
+  $stmt_partial->execute([$attempt_id]);
+  $partial_count = $stmt_partial->fetchColumn();
+
+  $stmt_eval = $pdo->prepare("SELECT COUNT(*) FROM student_answers WHERE attempt_id = ? AND is_correct = 3");
+  $stmt_eval->execute([$attempt_id]);
+  $eval_count = $stmt_eval->fetchColumn();
+
   $stmt_incorrect = $pdo->prepare("SELECT COUNT(*) FROM student_answers WHERE attempt_id = ? AND is_correct = 0");
   $stmt_incorrect->execute([$attempt_id]);
   $incorrect_count = $stmt_incorrect->fetchColumn();
   
   $total_questions = $attempt['config_easy_count'] + $attempt['config_medium_count'] + $attempt['config_hard_count'];
-  $answered_count = $correct_count + $incorrect_count;
+  $answered_count = $correct_count + $partial_count + $incorrect_count + $eval_count;
   $unanswered_count = $total_questions - $answered_count;
 
   $time_taken_str = 'N/A';
@@ -105,11 +113,23 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Correct', 'Incorrect', 'Unanswered'],
+            labels: ['Correct', 'Partially Correct', 'Incorrect', 'To be Evaluated', 'Unanswered'],
             datasets: [{
                 label: 'Performance',
-                data: [<?php echo json_encode($correct_count); ?>, <?php echo json_encode($incorrect_count); ?>, <?php echo json_encode($unanswered_count); ?>],
-                backgroundColor: ['rgba(40, 167, 69, 0.8)', 'rgba(220, 53, 69, 0.8)', 'rgba(108, 117, 125, 0.8)'],
+                data: [
+                    <?php echo json_encode($correct_count); ?>, 
+                    <?php echo json_encode($partial_count); ?>, 
+                    <?php echo json_encode($incorrect_count); ?>, 
+                    <?php echo json_encode($eval_count); ?>, 
+                    <?php echo json_encode($unanswered_count); ?>
+                ],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.8)',   // Correct (Green)
+                    'rgba(255, 193, 7, 0.8)',   // Partially Correct (Yellow)
+                    'rgba(220, 53, 69, 0.8)',   // Incorrect (Red)
+                    'rgba(23, 162, 184, 0.8)',  // To be Evaluated (Info Blue)
+                    'rgba(108, 117, 125, 0.8)'  // Unanswered (Gray)
+                ],
                 borderColor: '#fff',
                 borderWidth: 2
             }]

@@ -16,8 +16,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 4 || !isset($_GET['a
 $attempt_id = filter_var($_GET['attempt_id'], FILTER_VALIDATE_INT);
 
 try {
-    // 1. Get all questions that the student answered in this attempt
-    $sql_questions = "SELECT q.id, q.question_text, sa.selected_option_ids 
+    $sql_questions = "SELECT q.id, q.question_text, q.question_type_id, sa.selected_option_ids, sa.answer_text 
                       FROM student_answers sa
                       JOIN questions q ON sa.question_id = q.id
                       WHERE sa.attempt_id = ?";
@@ -36,7 +35,9 @@ try {
 
         $detailed_results[] = [
             'question_text' => $question['question_text'],
+            'question_type_id' => $question['question_type_id'],
             'student_selection' => json_decode($question['selected_option_ids'], true) ?? [],
+            'answer_text' => $question['answer_text'],
             'options' => $all_options
         ];
     }
