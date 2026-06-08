@@ -82,7 +82,7 @@ try {
     // Final Deletion from user and role tables
     $pdo->prepare("DELETE FROM students WHERE user_id = ?")->execute([$user_id_to_delete]);
     $pdo->prepare("DELETE FROM faculties WHERE user_id = ?")->execute([$user_id_to_delete]);
-    $pdo->prepare("DELETE FROM placement_officers WHERE user_id = ?")->execute([$user_id_to_delete]);
+    $pdo->prepare("DELETE FROM placecom_officers WHERE user_id = ?")->execute([$user_id_to_delete]);
     $pdo->prepare("DELETE FROM heads WHERE user_id = ?")->execute([$user_id_to_delete]);
     $pdo->prepare("DELETE FROM admins WHERE user_id = ?")->execute([$user_id_to_delete]);
     

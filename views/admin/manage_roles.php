@@ -41,7 +41,7 @@
                 <tr>
                     <td><?php echo htmlspecialchars(ucfirst($role['name'])); ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
-                        <?php if (!in_array($role['name'], ['admin', 'faculty', 'student', 'placement'])): // Prevent deleting core roles ?>
+                        <?php if (!in_array($role['name'], ['admin', 'faculty', 'student', 'placecom', 'director', 'school head'])): // Prevent deleting core roles ?>
                         <a href="<?= get_base_url() ?>api/admin/delete_role.php?id=<?php echo $role['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this role?')" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer;">Delete</a>
                         <?php else: ?>
                             <span style="color:#999;">Core Role</span>

@@ -1,0 +1,24 @@
+<?php
+  $pageTitle = 'Manage Exam Groups';
+  require_once '../../assets/templates/header.php';
+  require_once '../../config/database.php';
+
+  if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
+      redirect('login.php');
+      exit();
+  }
+?>
+
+
+<div class="dashboard-center-content" style="width: 100%;">
+    <div class="exam-groups-dashboard">
+        <a href="classes.php" class="button-red">Classes</a>
+        <a href="batches.php" class="button-red">Batches</a>
+        <a href="electives.php" class="button-red">Electives</a>
+        <a href="re_exam_groups.php" class="button-red">Re Exam Groups</a>
+    </div>
+</div>
+
+<?php
+  require_once '../../assets/templates/footer.php';
+?>

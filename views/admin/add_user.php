@@ -14,7 +14,10 @@
   // FIXED: Changed 'role_name' to 'name' to match your database schema
   $roles = $pdo->query("SELECT id, name FROM roles WHERE name NOT IN ('Admin', 'Super Admin')")->fetchAll();
   $schools = $pdo->query("SELECT id, name FROM schools ORDER BY name ASC")->fetchAll();
-  $specializations = $pdo->query("SELECT id, name FROM specializations ORDER BY name ASC")->fetchAll();
+  
+  $courses_data = $pdo->query("SELECT c.code, c.name as course_name, c.duration_years, s.name as school_name 
+                               FROM courses c 
+                               JOIN schools s ON c.school_id = s.id")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -49,7 +52,7 @@
                 <input type="email" id="email" name="email" placeholder="example@nmims.edu" required>
             </div>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="password-group">
             <label for="password">Password</label>
             <input type="password" id="password" name="password" required>
         </div>
@@ -60,41 +63,12 @@
             <div class="student-fields" style="display:none;">
                 <h4>Student Details</h4>
                 <div class="form-row">
-                    <div class="form-group"><label>SAP ID</label><input type="text" name="sap_id"></div>
-                    <div class="form-group"><label>Roll No.</label><input type="text" name="roll_no"></div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="student_school_id">School</label>
-                        <select id="student_school_id" name="school_id">
-                            <option value="">-- Select a School --</option>
-                            <?php foreach($schools as $school): ?>
-                            <option value="<?php echo $school['id']; ?>"><?php echo htmlspecialchars($school['name']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label>SAP ID (11 Digits)</label>
+                        <input type="text" name="sap_id" id="sap_id" minlength="11" maxlength="11" pattern="\d{11}" title="Must be exactly 11 digits">
+                        <div id="sap-preview" style="margin-top: 8px; font-size: 0.9em; display: none;"></div>
+                        <small style="color: #666; font-size: 0.8em; margin-top: 5px; display: block;">Note: SAP ID will be used as the default password. School, Course, and Batch will be assigned automatically based on SAP ID.</small>
                     </div>
-                    <div class="form-group">
-                        <label for="course_id">Course</label>
-                        <select id="course_id" name="course_id" disabled><option value="">-- Select School First --</option></select>
-                    </div>
-                </div>
-                 <div class="form-row">
-                    <div class="form-group">
-                        <label for="grad_year">Graduation Year</label>
-                        <input type="number" id="grad_year" name="graduation_year" placeholder="e.g., <?php echo date('Y') + 4; ?>">
-                    </div>
-                     <div class="form-group">
-                        <label for="batch">Batch</label>
-                        <input type="text" id="batch" name="batch" placeholder="e.g., 2024-2028">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="specializations">Assign Specializations (Optional)</label>
-                    <select multiple id="specializations" name="specialization_ids[]" style="width: 100%;">
-                        <?php foreach ($specializations as $spec): ?>
-                            <option value="<?php echo $spec['id']; ?>"><?php echo htmlspecialchars($spec['name']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
                 </div>
             </div>
 
@@ -125,11 +99,40 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 const BASE_URL = '<?= get_base_url() ?>';
+const coursesData = <?php echo json_encode($courses_data); ?>;
+const coursesMap = {};
+coursesData.forEach(c => {
+    coursesMap[c.code] = c;
+});
+
 document.addEventListener('DOMContentLoaded', function() {
-    $('#specializations').select2({
-        placeholder: "Select one or more specializations",
-        allowClear: true
-    });
+
+    const sapInput = document.getElementById('sap_id');
+    const sapPreview = document.getElementById('sap-preview');
+    if (sapInput) {
+        sapInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            if (val.length >= 8) {
+                const courseCode = val.substring(0, 4);
+                const yearStr = val.substring(4, 8);
+                const startYear = 2000 + parseInt(yearStr.substring(0, 2), 10);
+                
+                const course = coursesMap[courseCode];
+                if (course) {
+                    const endYear = startYear + parseInt(course.duration_years, 10);
+                    sapPreview.innerHTML = `<strong>School:</strong> ${course.school_name} <br> <strong>Course:</strong> ${course.course_name} <br> <strong>Batch:</strong> ${startYear}-${endYear}`;
+                    sapPreview.style.color = '#28a745';
+                    sapPreview.style.display = 'block';
+                } else {
+                    sapPreview.innerHTML = `Invalid Course Code (${courseCode})`;
+                    sapPreview.style.color = '#dc3545';
+                    sapPreview.style.display = 'block';
+                }
+            } else {
+                sapPreview.style.display = 'none';
+            }
+        });
+    }
 
     const roleSelect = document.getElementById('role_id');
     const studentFields = document.querySelector('.student-fields');
@@ -143,18 +146,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (roleText === 'student') {
             studentFields.style.display = 'block';
-        } else if (roleText === 'faculty' || roleText.includes('head')) { 
-            staffFields.style.display = 'block';
+            document.getElementById('password-group').style.display = 'none';
+            document.getElementById('password').removeAttribute('required');
+            document.getElementById('sap_id').setAttribute('required', 'required');
+            document.getElementById('email').setAttribute('pattern', '.*nmims\\.in$');
+            document.getElementById('email').setAttribute('title', 'Student email must end with nmims.in');
+        } else {
+            document.getElementById('password-group').style.display = 'block';
+            document.getElementById('password').setAttribute('required', 'required');
+            document.getElementById('sap_id').removeAttribute('required');
+            document.getElementById('email').removeAttribute('pattern');
+            document.getElementById('email').removeAttribute('title');
             
-            // Toggle SAP ID and Visiting Checkbox
-            if (roleText.includes('head')) {
-                document.getElementById('staff-sap-id-group').style.display = 'none';
-                document.getElementById('visiting-faculty-group').style.display = 'none';
-                document.getElementById('staff-school-group').style.display = 'flex';
-            } else {
-                document.getElementById('staff-sap-id-group').style.display = 'flex';
-                document.getElementById('staff-school-group').style.display = 'flex';
-                document.getElementById('visiting-faculty-group').style.display = 'flex';
+            if (roleText === 'faculty' || roleText.includes('head')) { 
+                staffFields.style.display = 'block';
+                
+                // Toggle SAP ID and Visiting Checkbox
+                if (roleText.includes('head')) {
+                    document.getElementById('staff-sap-id-group').style.display = 'none';
+                    document.getElementById('visiting-faculty-group').style.display = 'none';
+                    document.getElementById('staff-school-group').style.display = 'flex';
+                } else {
+                    document.getElementById('staff-sap-id-group').style.display = 'flex';
+                    document.getElementById('staff-school-group').style.display = 'flex';
+                    document.getElementById('visiting-faculty-group').style.display = 'flex';
+                }
             }
         }
     });

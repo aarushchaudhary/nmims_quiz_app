@@ -13,7 +13,7 @@
   $schools = $pdo->query("SELECT * FROM schools ORDER BY name ASC")->fetchAll();
   
   // Fetch all existing courses with their school name
-  $courses_sql = "SELECT c.id, c.name, c.code, s.name as school_name 
+  $courses_sql = "SELECT c.id, c.name, c.code, c.duration_years, s.name as school_name 
                   FROM courses c 
                   JOIN schools s ON c.school_id = s.id 
                   ORDER BY s.name, c.name ASC";
@@ -43,6 +43,10 @@
                     <label for="course_code">Course Code</label>
                     <input type="text" id="course_code" name="course_code" class="input-field" required>
                 </div>
+                <div class="form-group">
+                    <label for="duration_years">Duration (Years)</label>
+                    <input type="number" id="duration_years" name="duration_years" class="input-field" min="1" max="10" required>
+                </div>
             </div>
             <div class="form-group">
                 <label for="school_id">School</label>
@@ -59,13 +63,14 @@
 
     <table class="data-table">
         <thead>
-            <tr><th>Course Name</th><th>Code</th><th>School</th><th>Actions</th></tr>
+            <tr><th>Course Name</th><th>Code</th><th>Duration</th><th>School</th><th>Actions</th></tr>
         </thead>
         <tbody>
             <?php foreach ($courses as $course): ?>
                 <tr>
                     <td><?php echo htmlspecialchars($course['name']); ?></td>
                     <td><?php echo htmlspecialchars($course['code']); ?></td>
+                    <td><?php echo htmlspecialchars($course['duration_years']); ?> Years</td>
                     <td><?php echo htmlspecialchars($course['school_name']); ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
                         <a href="<?= get_base_url() ?>api/admin/delete_course.php?id=<?php echo $course['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this course?')" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer;">Delete</a>

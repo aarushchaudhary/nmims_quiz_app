@@ -37,7 +37,7 @@
   $offset = ($current_page - 1) * $items_per_page;
 
   // Get the total number of users matching the filters
-  $total_sql = "SELECT COUNT(DISTINCT u.id) FROM users u LEFT JOIN students s ON u.id = s.user_id AND u.role_id = 4 LEFT JOIN faculties f ON u.id = f.user_id AND u.role_id = 2 LEFT JOIN placement_officers p ON u.id = p.user_id AND u.role_id = 3 LEFT JOIN admins a ON u.id = a.user_id AND u.role_id IN (1, 6) LEFT JOIN heads h ON u.id = h.user_id $where_sql";
+  $total_sql = "SELECT COUNT(DISTINCT u.id) FROM users u LEFT JOIN students s ON u.id = s.user_id AND u.role_id = 4 LEFT JOIN faculties f ON u.id = f.user_id AND u.role_id = 2 LEFT JOIN placecom_officers p ON u.id = p.user_id AND u.role_id = 3 LEFT JOIN admins a ON u.id = a.user_id AND u.role_id IN (1, 6) LEFT JOIN heads h ON u.id = h.user_id $where_sql";
   $stmt_total = $pdo->prepare($total_sql);
   $stmt_total->execute($params);
   $total_users = $stmt_total->fetchColumn();
@@ -52,7 +52,7 @@
           JOIN roles r ON u.role_id = r.id
           LEFT JOIN students s ON u.id = s.user_id AND u.role_id = 4
           LEFT JOIN faculties f ON u.id = f.user_id AND u.role_id = 2
-          LEFT JOIN placement_officers p ON u.id = p.user_id AND u.role_id = 3
+          LEFT JOIN placecom_officers p ON u.id = p.user_id AND u.role_id = 3
           LEFT JOIN admins a ON u.id = a.user_id AND u.role_id IN (1, 6)
           LEFT JOIN heads h ON u.id = h.user_id
           $where_sql

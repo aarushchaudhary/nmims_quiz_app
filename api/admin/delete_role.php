@@ -12,6 +12,15 @@ if (!$role_id) {
 }
 
 try {
+    // Prevent deleting core roles
+    $stmt_role = $pdo->prepare("SELECT name FROM roles WHERE id = ?");
+    $stmt_role->execute([$role_id]);
+    $role_name = $stmt_role->fetchColumn();
+    
+    if (in_array($role_name, ['admin', 'faculty', 'student', 'placecom', 'director', 'school head'])) {
+        throw new Exception('Cannot delete core roles.');
+    }
+
     // First, check if any users are assigned this role
     $stmt_check = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role_id = ?");
     $stmt_check->execute([$role_id]);

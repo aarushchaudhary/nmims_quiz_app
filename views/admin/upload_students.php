@@ -31,11 +31,10 @@
     <div class="section-box">
         <h3>Upload Excel File</h3>
         <div style="text-align:center; color: #555;">
-            <p>Upload an Excel file (.xlsx) with student data. The file **must** contain the following headers in this order:</p>
-            <p><code>full_name, sap_id, roll_no, school, course, graduation_year, batch, username, password, specializations</code></p>
+            <p>Upload an Excel file (.xlsx) with student data. The file **must** contain the following headers in this exact order:</p>
+            <p><code>Name, Email, SAP ID</code></p>
             <p>
-                The password field is optional (default: '<strong>Password123</strong>').<br>
-                For the '<strong>specializations</strong>' column, enter names separated by a comma (e.g., "Marketing, Finance").
+                <strong>Note:</strong> Password, School, Course, Roll No., and Batch will be automatically generated based on the student's 11-digit SAP ID. The Email must end with <code>nmims.in</code>.
             </p>
         </div>
 

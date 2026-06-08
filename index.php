@@ -14,7 +14,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role_id'])) {
             redirect('views/admin/dashboard.php');
         case 2: // Faculty
             redirect('views/faculty/dashboard.php');
-        case 3: // Placement Officer
+        case 3: // Placecom Officer
             redirect('views/placecom/dashboard.php');
         case 4: // Student
             redirect('views/student/dashboard.php');

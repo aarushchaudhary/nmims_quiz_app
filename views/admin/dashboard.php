@@ -1,4 +1,4 @@
-﻿<?php
+<?php
   $pageTitle = 'Admin Dashboard';
   require_once '../../assets/templates/header.php';
 
@@ -25,7 +25,7 @@
             <a href="user_management.php" class="button-red" style="width:auto;">Manage Users</a>
             <a href="manage_schools.php" class="button-red" style="width:auto; background-color:#17a2b8;">Manage Schools</a>
             <a href="manage_courses.php" class="button-red" style="width:auto; background-color:#ffc107; color:#333;">Manage Courses</a>
-            <a href="manage_specializations.php" class="button-red">Manage Specializations</a>
+            <a href="exam_groups.php" class="button-red">Exam Groups</a>
             <a href="manage_roles.php" class="button-red" style="width:auto; background-color:#6f42c1;">Manage Roles</a>
             <a href="system_logs.php" class="button-red" style="width:auto; background-color:#6c757d;">View System Logs</a>
         </div>

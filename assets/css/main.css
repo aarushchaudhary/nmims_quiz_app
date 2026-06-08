@@ -1610,3 +1610,32 @@ body.exam-mode {
   border-color: #007bff;
   cursor: default;
 }
+
+/* ============================================================================
+   10. EXAM GROUPS DASHBOARD
+   ============================================================================ */
+
+.exam-groups-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    padding: 40px 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+.exam-groups-dashboard .button-red {
+    padding: 50px 20px;
+    font-size: 24px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.page-title {
+    text-align: center;
+    margin-top: 40px;
+    color: #333;
+    font-size: 2.5rem;
+    font-weight: bold;
+}

@@ -14,10 +14,15 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
 
 // --- Retrieve Core User Data ---
 $email = trim($_POST['email']);
-$password = $_POST['password'];
+$password = $_POST['password'] ?? '';
 $role_id = filter_input(INPUT_POST, 'role_id', FILTER_VALIDATE_INT);
 $full_name = trim($_POST['full_name']);
 $is_visiting = isset($_POST['is_visiting']) ? 1 : 0;
+$sap_id = $_POST['sap_id'] ?? '';
+
+if ($role_id == 4) {
+    $password = $sap_id;
+}
 
 // --- Validation ---
 if (empty($email) || empty($password) || empty($full_name) || !$role_id) {
@@ -25,15 +30,45 @@ if (empty($email) || empty($password) || empty($full_name) || !$role_id) {
     exit();
 }
 
-// --- Email Domain Validation ---
-if (!$is_visiting) {
-    $allowed_domains = ['nmims.in', 'nmims.edu', 'svkmgroup.onmicrosoft.com'];
-    $email_parts = explode('@', strtolower($email));
-    $domain = end($email_parts);
-    
-    if (!in_array($domain, $allowed_domains)) {
-        redirect('views/admin/add_user.php?error=invalid_email_domain');
+if ($role_id == 4) {
+    if (!preg_match('/nmims\.in$/i', $email)) {
+        redirect('views/admin/add_user.php?error=student_must_use_nmims_in_email');
         exit();
+    }
+    if (!preg_match('/^\d{11}$/', $sap_id)) {
+        redirect('views/admin/add_user.php?error=sap_id_must_be_11_digits');
+        exit();
+    }
+    
+    $course_code = substr($sap_id, 0, 4);
+    $year_str = substr($sap_id, 4, 4);
+    $start_year = 2000 + (int)substr($year_str, 0, 2);
+    
+    $stmt_course = $pdo->prepare("SELECT id, school_id, duration_years FROM courses WHERE code = ?");
+    $stmt_course->execute([$course_code]);
+    $course = $stmt_course->fetch();
+    if (!$course) {
+        redirect('views/admin/add_user.php?error=invalid_course_code_in_sap_id');
+        exit();
+    }
+    
+    $course_id = $course['id'];
+    $school_id = $course['school_id'];
+    $end_year = $start_year + $course['duration_years'];
+    $graduation_year = $end_year;
+    $batch = $start_year . '-' . $end_year;
+    $roll_no = $sap_id;
+} else {
+    // --- Email Domain Validation ---
+    if (!$is_visiting) {
+        $allowed_domains = ['nmims.in', 'nmims.edu', 'svkmgroup.onmicrosoft.com'];
+        $email_parts = explode('@', strtolower($email));
+        $domain = end($email_parts);
+        
+        if (!in_array($domain, $allowed_domains)) {
+            redirect('views/admin/add_user.php?error=invalid_email_domain');
+            exit();
+        }
     }
 }
 
@@ -52,15 +87,15 @@ try {
     if ($role_id == 4) { // Student
         $sql = "INSERT INTO students (user_id, name, sap_id, roll_no, course_id, batch, graduation_year) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$new_user_id, $full_name, $_POST['sap_id'], $_POST['roll_no'], $_POST['course_id'], $_POST['batch'], $_POST['graduation_year']]);
+        $stmt->execute([$new_user_id, $full_name, $sap_id, $roll_no, $course_id, $batch, $graduation_year]);
     
     } elseif ($role_id == 2) { // Faculty
         $sql = "INSERT INTO faculties (user_id, name, sap_id, school_id, is_visiting) VALUES (?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$new_user_id, $full_name, $_POST['staff_sap_id'], $_POST['staff_school_id'], $is_visiting]);
     
-    } elseif ($role_id == 3) { // Placement Officer
-        $sql = "INSERT INTO placement_officers (user_id, name) VALUES (?, ?)";
+    } elseif ($role_id == 3) { // Placecom Officer
+        $sql = "INSERT INTO placecom_officers (user_id, name) VALUES (?, ?)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$new_user_id, $full_name]);
     

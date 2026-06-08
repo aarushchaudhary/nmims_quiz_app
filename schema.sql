@@ -22,6 +22,7 @@ CREATE TABLE `courses` (
     `school_id` INT NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `code` VARCHAR(20) UNIQUE,
+    `duration_years` INT NOT NULL DEFAULT 1,
     FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -77,7 +78,7 @@ CREATE TABLE `faculties` (
   FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `placement_officers` (
+CREATE TABLE `placecom_officers` (
   `user_id`    INT          PRIMARY KEY,
   `name`       VARCHAR(100) NOT NULL,
   `department` VARCHAR(100),
@@ -266,7 +267,7 @@ INSERT INTO `question_difficulties` (`id`, `level`) VALUES
 INSERT INTO `roles` (`id`, `name`) VALUES
 (1, 'admin'),
 (2, 'faculty'),
-(3, 'placement'),
+(3, 'placecom'),
 (4, 'student'),
 (5, 'school head'),
 (6, 'director');

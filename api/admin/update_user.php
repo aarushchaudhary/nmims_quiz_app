@@ -27,14 +27,46 @@ if (!$user_id || !$role_id || empty($email) || empty($full_name)) {
 }
 
 // --- Email Domain Validation ---
-if (!$is_visiting) {
-    $allowed_domains = ['nmims.in', 'nmims.edu', 'svkmgroup.onmicrosoft.com'];
-    $email_parts = explode('@', strtolower($email));
-    $domain = end($email_parts);
-    
-    if (!in_array($domain, $allowed_domains)) {
-        redirect('views/admin/edit_user.php?id=' . $user_id . '&error=invalid_email_domain');
+if ($role_id == 4) {
+    if (!preg_match('/nmims\.in$/i', $email)) {
+        redirect('views/admin/edit_user.php?id=' . $user_id . '&error=student_must_use_nmims_in_email');
         exit();
+    }
+    
+    $sap_id = $_POST['sap_id'] ?? '';
+    if (!preg_match('/^\d{11}$/', $sap_id)) {
+        redirect('views/admin/edit_user.php?id=' . $user_id . '&error=sap_id_must_be_11_digits');
+        exit();
+    }
+    
+    $course_code = substr($sap_id, 0, 4);
+    $year_str = substr($sap_id, 4, 4);
+    $start_year = 2000 + (int)substr($year_str, 0, 2);
+    
+    $stmt_course = $pdo->prepare("SELECT id, school_id, duration_years FROM courses WHERE code = ?");
+    $stmt_course->execute([$course_code]);
+    $course = $stmt_course->fetch();
+    if (!$course) {
+        redirect('views/admin/edit_user.php?id=' . $user_id . '&error=invalid_course_code_in_sap_id');
+        exit();
+    }
+    
+    $course_id = $course['id'];
+    $end_year = $start_year + $course['duration_years'];
+    $graduation_year = $end_year;
+    $batch = $start_year . '-' . $end_year;
+    $roll_no = $sap_id;
+} else {
+    // --- Email Domain Validation ---
+    if (!$is_visiting) {
+        $allowed_domains = ['nmims.in', 'nmims.edu', 'svkmgroup.onmicrosoft.com'];
+        $email_parts = explode('@', strtolower($email));
+        $domain = end($email_parts);
+        
+        if (!in_array($domain, $allowed_domains)) {
+            redirect('views/admin/edit_user.php?id=' . $user_id . '&error=invalid_email_domain');
+            exit();
+        }
     }
 }
 
@@ -68,26 +100,19 @@ try {
     if ($role_id == 4) { // Student
         $sql_role = "UPDATE students SET name = ?, sap_id = ?, roll_no = ?, course_id = ?, batch = ?, graduation_year = ? WHERE user_id = ?";
         $stmt_role = $pdo->prepare($sql_role);
-        $stmt_role->execute([$full_name, $_POST['sap_id'], $_POST['roll_no'], $_POST['course_id'], $_POST['batch'], $_POST['graduation_year'], $user_id]);
+        $stmt_role->execute([$full_name, $sap_id, $roll_no, $course_id, $batch, $graduation_year, $user_id]);
 
-        // --- NEW: Handle Specializations server-side ---
+        // Clean up specializations if any
         $stmt_del = $pdo->prepare("DELETE FROM student_specializations WHERE student_id = ?");
         $stmt_del->execute([$user_id]);
-        
-        if (isset($_POST['specialization_ids']) && is_array($_POST['specialization_ids'])) {
-            $stmt_ins = $pdo->prepare("INSERT INTO student_specializations (student_id, specialization_id) VALUES (?, ?)");
-            foreach ($_POST['specialization_ids'] as $spec_id) {
-                $stmt_ins->execute([$user_id, $spec_id]);
-            }
-        }
     } elseif ($role_id == 2) { // Faculty
         $sql_role = "UPDATE faculties SET name = ?, sap_id = ?, school_id = ?, is_visiting = ? WHERE user_id = ?";
         $stmt_role = $pdo->prepare($sql_role);
         $sap_id_input = isset($_POST['faculty_sap_id']) ? $_POST['faculty_sap_id'] : (isset($_POST['staff_sap_id']) ? $_POST['staff_sap_id'] : '');
         $school_id_input = isset($_POST['department']) ? $_POST['department'] : (isset($_POST['staff_school_id']) ? $_POST['staff_school_id'] : null);
         $stmt_role->execute([$full_name, $sap_id_input, $school_id_input, $is_visiting, $user_id]);
-    } elseif ($role_id == 3) { // Placement Officer
-        $sql_role = "UPDATE placement_officers SET name = ? WHERE user_id = ?";
+    } elseif ($role_id == 3) { // Placecom Officer
+        $sql_role = "UPDATE placecom_officers SET name = ? WHERE user_id = ?";
         $stmt_role = $pdo->prepare($sql_role);
         $stmt_role->execute([$full_name, $user_id]);
     } elseif ($role_id == 5) { // School Head

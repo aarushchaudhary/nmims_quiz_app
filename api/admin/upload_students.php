@@ -30,13 +30,9 @@ try {
     $highestRow = $sheet->getHighestRow();
 
     // --- Prepare reusable statements for performance ---
-    // FIXED: Changed 'password' to 'password_hash' to match your database schema.
-    $stmt_user = $pdo->prepare("INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, ?)");
-    
+    $stmt_user = $pdo->prepare("INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)");
     $stmt_student = $pdo->prepare("INSERT INTO students (user_id, name, sap_id, roll_no, course_id, graduation_year, batch) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt_course = $pdo->prepare("SELECT id FROM courses WHERE name = ?");
-    $stmt_spec = $pdo->prepare("SELECT id FROM specializations WHERE name = ?");
-    $stmt_assign_spec = $pdo->prepare("INSERT INTO student_specializations (student_id, specialization_id) VALUES (?, ?)");
+    $stmt_course = $pdo->prepare("SELECT id, duration_years FROM courses WHERE code = ?");
 
     $successCount = 0;
     $errorCount = 0;
@@ -44,58 +40,64 @@ try {
 
     // --- Loop from row 2 to skip the header ---
     for ($row = 2; $row <= $highestRow; $row++) {
-        $full_name = trim($sheet->getCell('A' . $row)->getValue());
-        $sap_id = trim($sheet->getCell('B' . $row)->getValue());
-        $roll_no = trim($sheet->getCell('C' . $row)->getValue());
-        $school_name = trim($sheet->getCell('D' . $row)->getValue());
-        $course_name = trim($sheet->getCell('E' . $row)->getValue());
-        $graduation_year = trim($sheet->getCell('F' . $row)->getValue());
-        $batch = trim($sheet->getCell('G' . $row)->getValue());
-        $username = trim($sheet->getCell('H' . $row)->getValue());
-        $password = trim($sheet->getCell('I' . $row)->getValue());
-        $specializations_str = trim($sheet->getCell('J' . $row)->getValue());
+        $full_name = trim($sheet->getCell('A' . $row)->getValue() ?? '');
+        $email = trim($sheet->getCell('B' . $row)->getValue() ?? '');
+        $sap_id = trim($sheet->getCell('C' . $row)->getValue() ?? '');
 
-        if (empty($username) || empty($full_name)) {
-            $errorCount++;
-            $errorMessages[] = "Skipping row $row: Missing username or full name.";
-            continue;
-        }
-        
-        // Find Course ID
-        $stmt_course->execute([$course_name]);
-        $course_id = $stmt_course->fetchColumn();
-        if (!$course_id) {
-            $errorCount++;
-            $errorMessages[] = "Skipping row $row for user '$full_name': Course '{$course_name}' not found.";
-            continue;
-        }
-        
-        $password_to_hash = !empty($password) ? $password : 'Welcome123';
-        $password_hash = password_hash($password_to_hash, PASSWORD_DEFAULT);
-        
-        // Create user
-        $stmt_user->execute([$username, $password_hash, $student_role_id]);
-        $new_user_id = $pdo->lastInsertId();
-
-        // Create student
-        $stmt_student->execute([$new_user_id, $full_name, $sap_id, $roll_no, $course_id, $graduation_year, $batch]);
-
-        // Assign specializations if provided
-        if (!empty($specializations_str)) {
-            $specialization_names = array_map('trim', explode(',', $specializations_str));
-            foreach ($specialization_names as $spec_name) {
-                if(empty($spec_name)) continue;
-
-                $stmt_spec->execute([$spec_name]);
-                $spec_id = $stmt_spec->fetchColumn();
-                if ($spec_id) {
-                    $stmt_assign_spec->execute([$new_user_id, $spec_id]);
-                } else {
-                    $errorMessages[] = "Warning on row $row for user '$full_name': Specialization '$spec_name' not found and was not assigned.";
-                }
+        if (empty($email) || empty($full_name) || empty($sap_id)) {
+            // Check if row is completely empty before logging an error
+            if (empty($email) && empty($full_name) && empty($sap_id)) {
+                continue;
             }
+            $errorCount++;
+            $errorMessages[] = "Skipping row $row: Missing name, email, or SAP ID.";
+            continue;
         }
-        $successCount++;
+
+        if (!preg_match('/nmims\.in$/i', $email)) {
+            $errorCount++;
+            $errorMessages[] = "Skipping row $row: Email ($email) must end in nmims.in.";
+            continue;
+        }
+        
+        if (!preg_match('/^\d{11}$/', $sap_id)) {
+            $errorCount++;
+            $errorMessages[] = "Skipping row $row: SAP ID ($sap_id) must be exactly 11 digits.";
+            continue;
+        }
+
+        $course_code = substr($sap_id, 0, 4);
+        $year_str = substr($sap_id, 4, 4);
+        $start_year = 2000 + (int)substr($year_str, 0, 2);
+        
+        $stmt_course->execute([$course_code]);
+        $course = $stmt_course->fetch();
+        if (!$course) {
+            $errorCount++;
+            $errorMessages[] = "Skipping row $row for user '$full_name': Invalid course code in SAP ID ($course_code).";
+            continue;
+        }
+        
+        $course_id = $course['id'];
+        $end_year = $start_year + $course['duration_years'];
+        $graduation_year = $end_year;
+        $batch = $start_year . '-' . $end_year;
+        $roll_no = $sap_id;
+        
+        $password_hash = password_hash($sap_id, PASSWORD_DEFAULT);
+        
+        try {
+            // Create user
+            $stmt_user->execute([$email, $password_hash, $student_role_id]);
+            $new_user_id = $pdo->lastInsertId();
+
+            // Create student
+            $stmt_student->execute([$new_user_id, $full_name, $sap_id, $roll_no, $course_id, $graduation_year, $batch]);
+            $successCount++;
+        } catch (Exception $e) {
+            $errorCount++;
+            $errorMessages[] = "Skipping row $row for user '$full_name': Email or SAP ID already exists in system.";
+        }
     }
 
     $pdo->commit();

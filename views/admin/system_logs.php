@@ -16,7 +16,7 @@
                 FROM users u 
                 LEFT JOIN students s ON u.id = s.user_id 
                 LEFT JOIN faculties f ON u.id = f.user_id 
-                LEFT JOIN placement_officers p ON u.id = p.user_id 
+                LEFT JOIN placecom_officers p ON u.id = p.user_id 
                 LEFT JOIN admins a ON u.id = a.user_id 
                 LEFT JOIN heads h ON u.id = h.user_id 
                 ORDER BY full_name ASC";
@@ -32,7 +32,7 @@
           LEFT JOIN users u ON el.user_id = u.id
           LEFT JOIN students s ON u.id = s.user_id
           LEFT JOIN faculties f ON u.id = f.user_id
-          LEFT JOIN placement_officers p ON u.id = p.user_id
+          LEFT JOIN placecom_officers p ON u.id = p.user_id
           LEFT JOIN admins a ON u.id = a.user_id
           LEFT JOIN heads h ON u.id = h.user_id
           LEFT JOIN student_attempts sa ON el.attempt_id = sa.id
