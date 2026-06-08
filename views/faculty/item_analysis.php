@@ -8,7 +8,7 @@
 <div class="manage-container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2>Item Analysis</h2>
-        <a href="reports.php" class="button-red" style="width:auto; padding: 8px 16px; text-decoration:none;">&larr; Back to Reports</a>
+
     </div>
     <div id="analysis-content">
         <p>Loading analysis data...</p>

@@ -33,7 +33,7 @@
 ?>
 
 <div class="manage-container">
-    <a href="manage_quizzes.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to My Quizzes</a>
+
     <h2 style="text-align: center;"><?php echo htmlspecialchars($quiz['title']); ?></h2>
     
     <div id="message-area">
@@ -205,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.tagName === 'BUTTON') {
             const newStatusId = e.target.dataset.newStatusId;
             const actionText = e.target.textContent;
+
             if (actionText === 'End Exam Now' && !confirm('Are you sure?')) return;
 
             e.target.disabled = true;

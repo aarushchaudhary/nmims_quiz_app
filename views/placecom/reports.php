@@ -205,7 +205,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    quizSelector.addEventListener('change', function() { loadReport(this.value); });
+    quizSelector.addEventListener('change', function() { 
+        if (typeof updateUrlStateParam === 'function') {
+            updateUrlStateParam('quiz_id', this.value);
+        }
+        loadReport(this.value); 
+    });
     if (quizSelector.value) { loadReport(quizSelector.value); }
 });
 </script>

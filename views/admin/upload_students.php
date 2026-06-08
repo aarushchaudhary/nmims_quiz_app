@@ -11,7 +11,7 @@
 ?>
 
 <div class="manage-container">
-    <a href="user_management.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to User Management</a>
+
     <h2>Bulk Upload Students</h2>
 
     <?php

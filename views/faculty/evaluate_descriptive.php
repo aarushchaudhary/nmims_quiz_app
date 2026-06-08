@@ -36,7 +36,7 @@
 ?>
 
 <div class="manage-container">
-    <a href="reports.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to Reports</a>
+
     <h2>Evaluate Answers</h2>
 
     <?php if (empty($answers)): ?>

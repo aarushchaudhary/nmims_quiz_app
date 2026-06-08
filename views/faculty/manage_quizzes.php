@@ -154,7 +154,6 @@
                             <a href="start_quiz.php?id=<?php echo $quiz['id']; ?>" class="btn-start-quiz">Start Quiz</a>
                             <a href="edit_quiz.php?id=<?php echo $quiz['id']; ?>" class="btn-edit">Edit Details</a>
                             <a href="reports.php?quiz_id=<?php echo $quiz['id']; ?>" class="btn-reports">View Reports</a>
-                            <a href="../shared/event_log_report.php?quiz_id=<?php echo $quiz['id']; ?>" class="btn-logs">View Logs</a>
                             
                             <?php 
                                 // Show "Publish Results" if results are not shown immediately and the test has ended

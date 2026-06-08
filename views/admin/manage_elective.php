@@ -37,8 +37,7 @@
 ?>
 
 <div class="manage-container">
-    <a href="electives.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to Electives</a>
-    
+
     <h2>Manage Students for: <?php echo htmlspecialchars($elective['name']); ?></h2>
 
     <?php

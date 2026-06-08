@@ -73,7 +73,7 @@ $manual_saps = isset($_POST['manual_student_ids']) && is_array($_POST['manual_st
 $config_easy_count = filter_var($_POST['config_easy_count'], FILTER_VALIDATE_INT);
 $config_medium_count = filter_var($_POST['config_medium_count'], FILTER_VALIDATE_INT);
 $config_hard_count = filter_var($_POST['config_hard_count'], FILTER_VALIDATE_INT);
-// show_results_immediately removed to prevent overwriting existing published status
+$show_results_immediately = isset($_POST['show_results_immediately']) ? 1 : 0;
 $allow_calculator = isset($_POST['allow_calculator']) ? 1 : 0;
 $enable_negative_marking = isset($_POST['enable_negative_marking']) ? 1 : 0;
 $negative_marks_mcq = !empty($_POST['negative_marks_mcq']) ? filter_var($_POST['negative_marks_mcq'], FILTER_VALIDATE_FLOAT) : 0.00;
@@ -95,7 +95,8 @@ $sql = "UPDATE quizzes SET
             enable_negative_marking = :enable_negative_marking,
             negative_marks_mcq = :negative_marks_mcq,
             negative_marks_msq = :negative_marks_msq,
-            negative_marks_descriptive = :negative_marks_descriptive
+            negative_marks_descriptive = :negative_marks_descriptive,
+            show_results_immediately = :show_results_immediately
         WHERE id = :quiz_id AND faculty_id = :faculty_id";
 
 try {
@@ -116,6 +117,7 @@ try {
         ':negative_marks_mcq' => $negative_marks_mcq,
         ':negative_marks_msq' => $negative_marks_msq,
         ':negative_marks_descriptive' => $negative_marks_descriptive,
+        ':show_results_immediately' => $show_results_immediately,
         ':quiz_id' => $quiz_id,
         ':faculty_id' => $faculty_id
     ]);

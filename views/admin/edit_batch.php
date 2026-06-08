@@ -80,8 +80,7 @@
 </style>
 
 <div class="manage-container">
-    <a href="batches.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to Batches</a>
-    
+
     <div class="section-box">
         <h3>Edit Batch</h3>
         <form action="<?= get_base_url() ?>api/admin/edit_batch.php" method="POST" style="display:flex; flex-direction:column; gap: 15px;">

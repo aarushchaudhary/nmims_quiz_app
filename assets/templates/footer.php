@@ -6,6 +6,6 @@
     </footer>
 
     <!-- You can include global JavaScript files here if needed in the future -->
-    <!-- <script src="/nmims_quiz_app/assets/js/main.js"></script> -->
+    <script src="<?= get_base_url() ?>assets/js/script.js"></script>
 </body>
 </html>

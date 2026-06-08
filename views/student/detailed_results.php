@@ -8,7 +8,7 @@
 <div class="manage-container detailed-results-container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2>Question Breakdown</h2>
-        <a href="results.php?attempt_id=<?php echo htmlspecialchars($attempt_id); ?>">&larr; Back to Summary</a>
+
     </div>
     <div id="results-breakdown">
         <!-- Detailed results will be loaded here by JavaScript -->

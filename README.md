@@ -236,8 +236,7 @@ nmims_quiz_app/
 │   │   ├── manage_courses.php
 │   │   ├── manage_schools.php
 │   │   ├── manage_roles.php
-│   │   ├── upload_students.php
-│   │   └── system_logs.php
+│   │   └── upload_students.php
 │   ├── faculty/                      # Faculty pages
 │   │   ├── dashboard.php
 │   │   ├── create_quiz.php
@@ -258,8 +257,7 @@ nmims_quiz_app/
 │   │   ├── dashboard.php
 │   │   └── reports.php
 │   └── shared/                       # Shared pages (all roles)
-│       ├── dashboard.php
-│       └── event_log_report.php
+│       └── dashboard.php
 ├── schema.sql                        # Database schema and tables
 ├── index.php                         # Main entry point
 ├── login.php                         # Login page
@@ -393,7 +391,7 @@ See `schema.sql` for complete database structure.
 ### Shared APIs
 - **GET** `/api/shared/get_quiz_status.php?id=<quiz_id>` - Get quiz status
 - **GET** `/api/shared/get_courses_by_school.php` - Get courses by school
-- **GET** `/api/shared/get_event_logs.php` - Get system event logs
+- **GET** `/api/shared/get_quiz_reports.php` - Fetch aggregated report data for a quiz
 
 ## 🔐 Security
 

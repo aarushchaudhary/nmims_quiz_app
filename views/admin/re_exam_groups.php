@@ -19,7 +19,7 @@
 ?>
 
 <div class="manage-container">
-    <a href="exam_groups.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to Exam Groups</a>
+
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2>All Re Exam Groups (<?php echo count($groups); ?>)</h2>
     </div>

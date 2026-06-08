@@ -24,7 +24,6 @@
         <h3>School Tools</h3>
         <div class="button-group" style="justify-content:center;">
             <a href="../placecom/reports.php" class="button-red" style="width:auto;">View Quiz Reports</a>
-            <a href="../shared/event_log_report.php" class="button-red" style="width:auto; background-color:#6c757d;">View Event Logs</a>
         </div>
     </div>
 </div>

@@ -175,16 +175,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.summary.is_published) {
                 publishBtn.style.display = 'inline-block';
-                publishBtn.style.backgroundColor = '#6c757d';
-                publishBtn.textContent = 'Results Published';
-                publishBtn.disabled = true;
-                publishBtn.style.cursor = 'default';
+                publishBtn.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+                publishBtn.textContent = 'Unpublish Results';
+                publishBtn.disabled = false;
+                publishBtn.style.cursor = 'pointer';
+                publishBtn.dataset.action = 'unpublish';
             } else if (data.summary.total_attempts > 0) {
                 publishBtn.style.display = 'inline-block';
-                publishBtn.style.backgroundColor = '#28a745';
+                publishBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #218838 100%)';
                 publishBtn.textContent = 'Publish Results';
                 publishBtn.disabled = false;
                 publishBtn.style.cursor = 'pointer';
+                publishBtn.dataset.action = 'publish';
             } else {
                 publishBtn.style.display = 'none';
             }
@@ -193,7 +195,12 @@ document.addEventListener('DOMContentLoaded', function() {
             placeholder.textContent = `Error: ${error.message}`;
         }
     }
-    quizSelector.addEventListener('change', function() { loadReport(this.value); });
+    quizSelector.addEventListener('change', function() { 
+        if (typeof updateUrlStateParam === 'function') {
+            updateUrlStateParam('quiz_id', this.value);
+        }
+        loadReport(this.value); 
+    });
     if (quizSelector.value) { loadReport(quizSelector.value); }
 
     publishBtn.addEventListener('click', async function(e) {
@@ -201,28 +208,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const quizId = quizSelector.value;
         if (!quizId) return;
         
-        if (confirm('Are you sure you want to publish the results for this exam? Students will be able to view their scores and answers immediately.')) {
+        const action = publishBtn.dataset.action;
+        const confirmMsg = action === 'publish' 
+            ? 'Are you sure you want to publish the results for this exam? Students will be able to view their scores and answers immediately.'
+            : 'Are you sure you want to unpublish the results? Students will no longer be able to view their scores.';
+            
+        if (confirm(confirmMsg)) {
             try {
                 publishBtn.disabled = true;
-                publishBtn.textContent = 'Publishing...';
+                publishBtn.textContent = action === 'publish' ? 'Publishing...' : 'Unpublishing...';
                 const response = await fetch(BASE_URL + 'api/faculty/publish_results.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ quiz_id: quizId })
+                    body: JSON.stringify({ quiz_id: quizId, action: action })
                 });
                 const result = await response.json();
                 if (result.success) {
-                    alert('Results published successfully!');
-                    publishBtn.style.backgroundColor = '#6c757d';
-                    publishBtn.textContent = 'Results Published';
-                    publishBtn.style.cursor = 'default';
+                    alert(`Results ${action === 'publish' ? 'published' : 'unpublished'} successfully!`);
+                    // Refresh the report data to reflect the new state
+                    loadReport(quizId);
                 } else {
-                    throw new Error(result.error || 'Failed to publish results.');
+                    throw new Error(result.error || `Failed to ${action} results.`);
                 }
             } catch (error) {
                 alert(`Error: ${error.message}`);
-                publishBtn.disabled = false;
-                publishBtn.textContent = 'Publish Results';
+                // Refresh the report data to reset the button correctly
+                loadReport(quizId);
             }
         }
     });

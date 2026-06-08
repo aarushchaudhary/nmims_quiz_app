@@ -14,7 +14,7 @@
 ?>
 
 <div class="manage-container">
-    <a href="dashboard.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to Dashboard</a>
+
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2>All User Roles (<?php echo count($roles); ?>)</h2>
     </div>

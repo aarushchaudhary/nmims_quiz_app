@@ -31,7 +31,7 @@
 </div>
 
 <div class="manage-container">
-    <a href="view_quiz.php?id=<?php echo $quiz_id; ?>" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to Add Questions</a>
+
     <h2>Existing Questions (<span id="question-count"><?php echo count($questions); ?></span>)</h2>
 
     <table class="data-table">

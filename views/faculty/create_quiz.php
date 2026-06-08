@@ -27,11 +27,8 @@
   $re_exam_groups = $pdo->query("SELECT id, name FROM re_exam_groups WHERE expires_at > NOW() ORDER BY name ASC")->fetchAll();
 ?>
 
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
   /* Optional: Improve Select2 appearance */
-  .select2-container .select2-selection--single { height: 42px; border: 1px solid #ced4da; padding-top: 5px;}
-  .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px; }
 </style>
 
 <div class="form-container">
@@ -135,7 +132,7 @@
       <div class="form-group"><label for="hard_count">Hard Questions</label><input type="number" id="hard_count" name="config_hard_count" min="0" value="0" required></div>
     </div>
 
-    <!-- 'Show Results Immediately' removed to enforce manual publishing only via Reports button -->
+    <!-- Removed: Show Results Toggle (to prevent accidental early publishing) -->
 
     <!-- NEW: Calculator Toggle -->
     <div class="form-group toggle-switch">
@@ -178,10 +175,8 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-const BASE_URL = '<?= get_base_url() ?>';
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Select2 on the student dropdowns and group dropdowns
     $('.student-select').select2({
@@ -192,7 +187,6 @@ document.addEventListener('DOMContentLoaded', function() {
         placeholder: "Select groups",
         allowClear: true
     });
-
     // --- Existing script for cascading dropdowns ---
     const schoolSelect = document.getElementById('school_id');
     const courseSelect = document.getElementById('course_id');

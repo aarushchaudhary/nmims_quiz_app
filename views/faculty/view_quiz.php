@@ -28,7 +28,7 @@
 ?>
 
 <div class="manage-container">
-    <a href="manage_quizzes.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to My Quizzes</a>
+
     <h2 style="text-align: center;"><?php echo htmlspecialchars($quiz['title']); ?></h2>
     
     <?php

@@ -37,8 +37,7 @@
 ?>
 
 <div class="manage-container">
-    <a href="re_exam_groups.php" style="text-decoration: none; color: #007bff; margin-bottom: 20px; display: inline-block;">&larr; Back to Re Exam Groups</a>
-    
+
     <h2>Manage Students for: <?php echo htmlspecialchars($group['name']); ?></h2>
     <p style="color: #d9534f; font-weight: bold;">Expires At: <?php echo date('Y-m-d H:i', strtotime($group['expires_at'])); ?></p>
 

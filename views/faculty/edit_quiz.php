@@ -59,11 +59,8 @@
   $is_results_immediate_checked = $quiz['show_results_immediately'] ? 'checked' : '';
 ?>
 
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
   /* Optional: Improve Select2 appearance */
-  .select2-container .select2-selection--single { height: 42px; border: 1px solid #ced4da; padding-top: 5px;}
-  .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px; }
 </style>
 
 <div class="form-container">
@@ -169,7 +166,14 @@
       <div class="form-group"><label>Hard Questions</label><input type="number" name="config_hard_count" value="<?php echo htmlspecialchars($quiz['config_hard_count']); ?>" min="0" required></div>
     </div>
 
-    <!-- 'Show Results Immediately' removed to enforce manual publishing only via Reports button -->
+    <!-- NEW: Show Results Toggle -->
+    <div class="form-group toggle-switch">
+      <label for="show_results_immediately">Show Results Immediately?</label>
+      <label class="switch">
+        <input type="checkbox" id="show_results_immediately" name="show_results_immediately" value="1" <?= $quiz['show_results_immediately'] ? 'checked' : '' ?>>
+        <span class="slider"></span>
+      </label>
+    </div>
 
     <!-- NEW: Calculator Toggle -->
     <div class="form-group toggle-switch">
@@ -213,10 +217,8 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-const BASE_URL = '<?= get_base_url() ?>';
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Select2 on the new student dropdowns
     $('.student-select').select2({
@@ -259,6 +261,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     initializeDropdowns();
+
+    // Toggle Negative Marks visibility
+    $('#enable_negative_marking').on('change', function() {
+        if($(this).is(':checked')) {
+            $('#negative_marks_row').slideDown();
+        } else {
+            $('#negative_marks_row').slideUp();
+            $('#negative_marks_mcq').val('0.00');
+            $('#negative_marks_msq').val('0.00');
+            $('#negative_marks_descriptive').val('0.00');
+        }
+    });
+
+    // Trigger change on load to set initial state
+    $('#enable_negative_marking').trigger('change');
 });
 </script>
 

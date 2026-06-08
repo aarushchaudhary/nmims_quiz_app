@@ -28,17 +28,17 @@
   $sql = "SELECT DISTINCT q.id, q.title, q.start_time, es.name as status_name
           FROM quizzes q
           JOIN exam_statuses es ON q.status_id = es.id
-          LEFT JOIN quiz_manual_students qms ON q.id = qms.quiz_id AND qms.student_id = :student_user_id
+          LEFT JOIN quiz_manual_students qms ON q.id = qms.quiz_id AND qms.student_id = :student_user_id_1
           LEFT JOIN quiz_classes qc ON q.id = qc.quiz_id
           LEFT JOIN classes c ON qc.class_id = c.id
           LEFT JOIN quiz_batches qb ON q.id = qb.quiz_id
           LEFT JOIN batches b ON qb.batch_id = b.id
           LEFT JOIN classes bc ON b.class_id = bc.id
           LEFT JOIN quiz_electives qe ON q.id = qe.quiz_id
-          LEFT JOIN elective_students es_stu ON qe.elective_id = es_stu.elective_id AND es_stu.student_id = :student_user_id
+          LEFT JOIN elective_students es_stu ON qe.elective_id = es_stu.elective_id AND es_stu.student_id = :student_user_id_2
           LEFT JOIN quiz_re_exam_groups qrg ON q.id = qrg.quiz_id
-          LEFT JOIN re_exam_group_students regs ON qrg.group_id = regs.group_id AND regs.student_id = :student_user_id
-          JOIN students s ON s.user_id = :student_user_id
+          LEFT JOIN re_exam_group_students regs ON qrg.group_id = regs.group_id AND regs.student_id = :student_user_id_3
+          JOIN students s ON s.user_id = :student_user_id_4
           WHERE (
               qms.student_id IS NOT NULL
               OR (
@@ -64,7 +64,10 @@
           ORDER BY q.start_time ASC";
   
   $params = [
-      ':student_user_id' => $student_user_id
+      ':student_user_id_1' => $student_user_id,
+      ':student_user_id_2' => $student_user_id,
+      ':student_user_id_3' => $student_user_id,
+      ':student_user_id_4' => $student_user_id
   ];
   
   $stmt_quizzes = $pdo->prepare($sql);
@@ -85,7 +88,7 @@
       $stmt_published = $pdo->prepare($sql_published);
       $stmt_published->execute([':student_user_id' => $student_user_id]);
       $published_results = $stmt_published->fetchAll();
-
+?>
 
 <div class="manage-container">
     <h2 style="margin-bottom: 10px;">Welcome, <?php echo $studentName; ?>!</h2>

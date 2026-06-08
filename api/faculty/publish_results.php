@@ -33,8 +33,11 @@ try {
         throw new Exception("Quiz not found or you do not have permission to modify it.");
     }
 
-    $stmt_update = $pdo->prepare("UPDATE quizzes SET show_results_immediately = 1 WHERE id = ? AND faculty_id = ?");
-    $stmt_update->execute([$quiz_id, $faculty_id]);
+    $action = $input['action'] ?? 'publish';
+    $show_results = ($action === 'unpublish') ? 0 : 1;
+
+    $stmt_update = $pdo->prepare("UPDATE quizzes SET show_results_immediately = ? WHERE id = ? AND faculty_id = ?");
+    $stmt_update->execute([$show_results, $quiz_id, $faculty_id]);
 
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
