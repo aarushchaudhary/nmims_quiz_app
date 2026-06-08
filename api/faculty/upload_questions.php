@@ -47,15 +47,15 @@ try {
     // Loop through each row of the spreadsheet, starting from row 2 to skip the header
     for ($row = 2; $row <= $highestRow; $row++) {
         // **MODIFIED:** Reading new column order
-        $question_text = trim($sheet->getCell('A' . $row)->getValue());
-        $type_name = trim($sheet->getCell('B' . $row)->getValue());
-        $difficulty_level = trim($sheet->getCell('C' . $row)->getValue());
-        $points = trim($sheet->getCell('D' . $row)->getValue()); // NEW
-        $option1 = trim($sheet->getCell('E' . $row)->getValue());
-        $option2 = trim($sheet->getCell('F' . $row)->getValue());
-        $option3 = trim($sheet->getCell('G' . $row)->getValue());
-        $option4 = trim($sheet->getCell('H' . $row)->getValue());
-        $correct_option_nums = explode(',', trim($sheet->getCell('I' . $row)->getValue()));
+        $question_text = trim($sheet->getCell('A' . $row)->getValue() ?? '');
+        $type_name = trim($sheet->getCell('B' . $row)->getValue() ?? '');
+        $difficulty_level = trim($sheet->getCell('C' . $row)->getValue() ?? '');
+        $points = trim($sheet->getCell('D' . $row)->getValue() ?? ''); // NEW
+        $option1 = trim($sheet->getCell('E' . $row)->getValue() ?? '');
+        $option2 = trim($sheet->getCell('F' . $row)->getValue() ?? '');
+        $option3 = trim($sheet->getCell('G' . $row)->getValue() ?? '');
+        $option4 = trim($sheet->getCell('H' . $row)->getValue() ?? '');
+        $correct_option_nums = explode(',', trim($sheet->getCell('I' . $row)->getValue() ?? ''));
 
         if (empty($question_text)) continue;
 
