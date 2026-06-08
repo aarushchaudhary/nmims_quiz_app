@@ -57,7 +57,6 @@ if ($role_id == 4) {
     $end_year = $start_year + $course['duration_years'];
     $graduation_year = $end_year;
     $batch = $start_year . '-' . $end_year;
-    $roll_no = $sap_id;
 } else {
     // --- Email Domain Validation ---
     if (!$is_visiting) {
@@ -85,9 +84,9 @@ try {
 
     // 2. Insert into the appropriate details table based on the role
     if ($role_id == 4) { // Student
-        $sql = "INSERT INTO students (user_id, name, sap_id, roll_no, course_id, batch, graduation_year) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO students (user_id, name, sap_id, course_id, batch, graduation_year) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$new_user_id, $full_name, $sap_id, $roll_no, $course_id, $batch, $graduation_year]);
+        $stmt->execute([$new_user_id, $full_name, $sap_id, $course_id, $batch, $graduation_year]);
     
     } elseif ($role_id == 2) { // Faculty
         $sql = "INSERT INTO faculties (user_id, name, sap_id, school_id, is_visiting) VALUES (?, ?, ?, ?, ?)";

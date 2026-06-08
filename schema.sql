@@ -60,7 +60,6 @@ CREATE TABLE `students` (
   `user_id`         INT           PRIMARY KEY,
   `name`            VARCHAR(100)  NOT NULL,
   `sap_id`          VARCHAR(20)   NOT NULL UNIQUE,
-  `roll_no`         VARCHAR(20)   NOT NULL UNIQUE,
   `course_id`       INT           NOT NULL,
   `batch`           VARCHAR(50)   NOT NULL,
   `graduation_year` YEAR          NOT NULL,

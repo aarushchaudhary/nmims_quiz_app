@@ -12,7 +12,7 @@
 
   // --- Fetch all user data ---
   $sql = "SELECT u.id, u.email, u.role_id, 
-                 s.name as student_name, s.sap_id as student_sap_id, s.roll_no, s.course_id, s.batch, s.graduation_year,
+                 s.name as student_name, s.sap_id as student_sap_id, s.course_id, s.batch, s.graduation_year,
                  f.name as faculty_name, f.sap_id as faculty_sap_id, f.school_id as faculty_school_id, f.is_visiting as faculty_is_visiting,
                  p.name as placecom_name, p.department as placecom_department,
                  h.name as head_name, h.school_id as head_school_id,

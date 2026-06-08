@@ -31,7 +31,7 @@ try {
 
     // --- Prepare reusable statements for performance ---
     $stmt_user = $pdo->prepare("INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)");
-    $stmt_student = $pdo->prepare("INSERT INTO students (user_id, name, sap_id, roll_no, course_id, graduation_year, batch) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt_student = $pdo->prepare("INSERT INTO students (user_id, name, sap_id, course_id, graduation_year, batch) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt_course = $pdo->prepare("SELECT id, duration_years FROM courses WHERE code = ?");
 
     $successCount = 0;
@@ -82,7 +82,6 @@ try {
         $end_year = $start_year + $course['duration_years'];
         $graduation_year = $end_year;
         $batch = $start_year . '-' . $end_year;
-        $roll_no = $sap_id;
         
         $password_hash = password_hash($sap_id, PASSWORD_DEFAULT);
         
@@ -92,7 +91,7 @@ try {
             $new_user_id = $pdo->lastInsertId();
 
             // Create student
-            $stmt_student->execute([$new_user_id, $full_name, $sap_id, $roll_no, $course_id, $graduation_year, $batch]);
+            $stmt_student->execute([$new_user_id, $full_name, $sap_id, $course_id, $graduation_year, $batch]);
             $successCount++;
         } catch (Exception $e) {
             $errorCount++;

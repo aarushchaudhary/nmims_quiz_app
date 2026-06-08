@@ -55,7 +55,6 @@ if ($role_id == 4) {
     $end_year = $start_year + $course['duration_years'];
     $graduation_year = $end_year;
     $batch = $start_year . '-' . $end_year;
-    $roll_no = $sap_id;
 } else {
     // --- Email Domain Validation ---
     if (!$is_visiting) {
@@ -98,9 +97,9 @@ try {
 
     // 2. Update the role-specific table
     if ($role_id == 4) { // Student
-        $sql_role = "UPDATE students SET name = ?, sap_id = ?, roll_no = ?, course_id = ?, batch = ?, graduation_year = ? WHERE user_id = ?";
+        $sql_role = "UPDATE students SET name = ?, sap_id = ?, course_id = ?, batch = ?, graduation_year = ? WHERE user_id = ?";
         $stmt_role = $pdo->prepare($sql_role);
-        $stmt_role->execute([$full_name, $sap_id, $roll_no, $course_id, $batch, $graduation_year, $user_id]);
+        $stmt_role->execute([$full_name, $sap_id, $course_id, $batch, $graduation_year, $user_id]);
 
         // Clean up specializations if any
         $stmt_del = $pdo->prepare("DELETE FROM student_specializations WHERE student_id = ?");
