@@ -26,6 +26,61 @@ CREATE TABLE `courses` (
     FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE `classes` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL,
+    `school_id` INT NOT NULL,
+    `course_id` INT NOT NULL,
+    `graduation_year` YEAR NOT NULL,
+    `sap_id_range_start` BIGINT NOT NULL,
+    `sap_id_range_end` BIGINT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`course_id`) REFERENCES `courses`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `batches` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL,
+    `class_id` INT NOT NULL,
+    `sap_id_range_start` BIGINT NOT NULL,
+    `sap_id_range_end` BIGINT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`class_id`) REFERENCES `classes`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `electives` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(150) NOT NULL UNIQUE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `elective_students` (
+    `elective_id` INT NOT NULL,
+    `student_id` INT NOT NULL,
+    PRIMARY KEY (`elective_id`, `student_id`),
+    FOREIGN KEY (`elective_id`) REFERENCES `electives`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `re_exam_groups` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(150) NOT NULL UNIQUE,
+    `expires_at` DATETIME NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `re_exam_group_students` (
+    `group_id` INT NOT NULL,
+    `student_id` INT NOT NULL,
+    PRIMARY KEY (`group_id`, `student_id`),
+    FOREIGN KEY (`group_id`) REFERENCES `re_exam_groups`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE `question_types` (
   `id`   INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(30) NOT NULL UNIQUE
@@ -131,10 +186,6 @@ CREATE TABLE `quizzes` (
   `title`                      VARCHAR(150) NOT NULL,
   `faculty_id`                 INT          NOT NULL,
   `course_id`                  INT          NOT NULL,
-  `graduation_year`            YEAR         DEFAULT NULL,
-  `specialization_id`          INT          DEFAULT NULL,
-  `sap_id_range_start`         BIGINT       NULL DEFAULT NULL,
-  `sap_id_range_end`           BIGINT       NULL DEFAULT NULL,
   `show_results_immediately`   BOOLEAN      NOT NULL DEFAULT TRUE,
   `start_time`                 DATETIME     NOT NULL,
   `end_time`                   DATETIME     NOT NULL,
@@ -176,6 +227,46 @@ CREATE TABLE `options` (
   `is_correct`   TINYINT(1)    NOT NULL DEFAULT 0,
   `created_at`   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`question_id`) REFERENCES `questions`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `quiz_classes` (
+    `quiz_id` INT NOT NULL,
+    `class_id` INT NOT NULL,
+    PRIMARY KEY (`quiz_id`, `class_id`),
+    FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`class_id`) REFERENCES `classes`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `quiz_batches` (
+    `quiz_id` INT NOT NULL,
+    `batch_id` INT NOT NULL,
+    PRIMARY KEY (`quiz_id`, `batch_id`),
+    FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`batch_id`) REFERENCES `batches`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `quiz_electives` (
+    `quiz_id` INT NOT NULL,
+    `elective_id` INT NOT NULL,
+    PRIMARY KEY (`quiz_id`, `elective_id`),
+    FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`elective_id`) REFERENCES `electives`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `quiz_re_exam_groups` (
+    `quiz_id` INT NOT NULL,
+    `group_id` INT NOT NULL,
+    PRIMARY KEY (`quiz_id`, `group_id`),
+    FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`group_id`) REFERENCES `re_exam_groups`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `quiz_manual_students` (
+    `quiz_id` INT NOT NULL,
+    `student_id` INT NOT NULL,
+    PRIMARY KEY (`quiz_id`, `student_id`),
+    FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 

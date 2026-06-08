@@ -52,7 +52,6 @@ A comprehensive, role-based quiz management system built with PHP and MySQL, des
 - **Bulk User Upload**: Import users via Excel templates for faster onboarding
 - **Role Management**: Manage user roles and permissions
 - **School & Course Management**: Organize users by schools and courses
-- **Specialization Assignment**: Bulk assign specializations to students
 - **System Overview**: Monitor all active quizzes and system-wide usage
 - **Event Logs**: Track all system events and user activities
 - **Password Reset**: Reset student/faculty passwords
@@ -180,8 +179,6 @@ nmims_quiz_app/
 │   │   ├── add_course.php
 │   │   ├── add_school.php
 │   │   ├── add_role.php
-│   │   ├── add_specialization.php
-│   │   ├── bulk_assign_specialization.php
 │   │   ├── delete_*.php              # Delete operations
 │   │   ├── get_*.php                 # Get/Fetch operations
 │   │   ├── reset_password.php
@@ -239,7 +236,6 @@ nmims_quiz_app/
 │   │   ├── manage_courses.php
 │   │   ├── manage_schools.php
 │   │   ├── manage_roles.php
-│   │   ├── manage_specializations.php
 │   │   ├── upload_students.php
 │   │   └── system_logs.php
 │   ├── faculty/                      # Faculty pages
@@ -352,7 +348,7 @@ nmims_quiz_app/
 ### For Administrators
 1. Log in to the admin dashboard
 2. Manage users: Add, edit, or delete student/faculty accounts
-3. Manage academic structure: Schools, courses, specializations, batches
+3. Manage academic structure: Schools, courses, batches
 4. Upload users: Use Excel template for bulk import
 5. View system logs: Monitor all system activities
 6. Reset passwords: Reset user credentials if needed
@@ -369,7 +365,6 @@ Key tables:
 - **event_logs** - System activity and audit logs
 - **schools** - Educational institutions
 - **courses** - Academic courses
-- **specializations** - Student specializations/branches
 
 See `schema.sql` for complete database structure.
 
@@ -394,8 +389,6 @@ See `schema.sql` for complete database structure.
 ### Admin APIs
 - **POST** `/api/admin/add_user.php` - Create user
 - **POST** `/api/admin/upload_students.php` - Bulk upload users
-- **GET** `/api/admin/get_user_specialization.php` - Get user specialization
-- **POST** `/api/admin/bulk_assign_specialization.php` - Assign specializations
 
 ### Shared APIs
 - **GET** `/api/shared/get_quiz_status.php?id=<quiz_id>` - Get quiz status

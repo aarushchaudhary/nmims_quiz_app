@@ -36,8 +36,21 @@
   ");
   $students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-  // --- NEW: Fetch specializations ---
-  $specializations = $pdo->query("SELECT id, name FROM specializations ORDER BY name ASC")->fetchAll();
+  // Fetch groups
+  $classes = $pdo->query("SELECT id, name FROM classes ORDER BY name ASC")->fetchAll();
+  $batches = $pdo->query("SELECT id, name FROM batches ORDER BY name ASC")->fetchAll();
+  $electives = $pdo->query("SELECT id, name FROM electives ORDER BY name ASC")->fetchAll();
+  $re_exam_groups = $pdo->query("SELECT id, name FROM re_exam_groups ORDER BY name ASC")->fetchAll();
+
+  // Fetch current mappings
+  $stmt_c = $pdo->prepare("SELECT class_id FROM quiz_classes WHERE quiz_id = ?"); $stmt_c->execute([$quiz_id]); $current_classes = $stmt_c->fetchAll(PDO::FETCH_COLUMN);
+  $stmt_b = $pdo->prepare("SELECT batch_id FROM quiz_batches WHERE quiz_id = ?"); $stmt_b->execute([$quiz_id]); $current_batches = $stmt_b->fetchAll(PDO::FETCH_COLUMN);
+  $stmt_e = $pdo->prepare("SELECT elective_id FROM quiz_electives WHERE quiz_id = ?"); $stmt_e->execute([$quiz_id]); $current_electives = $stmt_e->fetchAll(PDO::FETCH_COLUMN);
+  $stmt_r = $pdo->prepare("SELECT group_id FROM quiz_re_exam_groups WHERE quiz_id = ?"); $stmt_r->execute([$quiz_id]); $current_re_exam_groups = $stmt_r->fetchAll(PDO::FETCH_COLUMN);
+  
+  $stmt_m = $pdo->prepare("SELECT s.sap_id FROM quiz_manual_students qms JOIN students s ON qms.student_id = s.user_id WHERE qms.quiz_id = ?"); 
+  $stmt_m->execute([$quiz_id]); 
+  $current_manual_saps = $stmt_m->fetchAll(PDO::FETCH_COLUMN);
 
   function format_datetime_for_input($datetime) {
       return date('Y-m-d\TH:i', strtotime($datetime));
@@ -81,24 +94,6 @@
                 <option value="">-- Loading... --</option>
             </select>
         </div>
-        <div class="form-group">
-            <label for="graduation_year">Graduation Year</label>
-            <select id="graduation_year" name="graduation_year" required>
-                <option value="">-- Loading... --</option>
-            </select>
-        </div>
-    </div>
-    
-    <div class="form-group">
-        <label for="specialization_id">Specialization (Optional)</label>
-        <select id="specialization_id" name="specialization_id">
-            <option value="">-- General Quiz for all Specializations --</option>
-            <?php foreach ($specializations as $spec): ?>
-            <option value="<?php echo $spec['id']; ?>" <?php echo ($quiz['specialization_id'] == $spec['id']) ? 'selected' : ''; ?>>
-                <?php echo htmlspecialchars($spec['name']); ?>
-            </option>
-            <?php endforeach; ?>
-        </select>
     </div>
 
     <div class="form-row">
@@ -109,23 +104,58 @@
     <h3 style="text-align: center;">Student & Question Configuration</h3>
     
     <div class="form-row">
-        <div class="form-group">
-            <label for="sap_id_start">SAP ID Range (Optional)</label>
-            <select name="sap_id_range_start" id="sap_id_start" class="student-select">
-                <option></option> 
-                <?php foreach ($students as $student): ?>
-                    <option value="<?php echo htmlspecialchars($student['sap_id']); ?>" <?php if ($student['sap_id'] == $quiz['sap_id_range_start']) echo 'selected'; ?>>
-                        <?php echo htmlspecialchars($student['full_name'] . ' (' . $student['sap_id'] . ')'); ?>
-                    </option>
-                <?php endforeach; ?>
+        <div class="form-group" style="width: 100%;">
+            <label for="exam_groups">Select Exam Groups</label>
+            <select name="exam_groups[]" id="exam_groups" class="group-select" multiple>
+                <?php if (!empty($classes)): ?>
+                <optgroup label="Classes">
+                    <?php foreach ($classes as $class): ?>
+                        <option value="class_<?php echo $class['id']; ?>" <?php if (in_array($class['id'], $current_classes)) echo 'selected'; ?>>
+                            <?php echo htmlspecialchars($class['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
+
+                <?php if (!empty($batches)): ?>
+                <optgroup label="Batches">
+                    <?php foreach ($batches as $batch): ?>
+                        <option value="batch_<?php echo $batch['id']; ?>" <?php if (in_array($batch['id'], $current_batches)) echo 'selected'; ?>>
+                            <?php echo htmlspecialchars($batch['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
+
+                <?php if (!empty($electives)): ?>
+                <optgroup label="Electives">
+                    <?php foreach ($electives as $elective): ?>
+                        <option value="elective_<?php echo $elective['id']; ?>" <?php if (in_array($elective['id'], $current_electives)) echo 'selected'; ?>>
+                            <?php echo htmlspecialchars($elective['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
+
+                <?php if (!empty($re_exam_groups)): ?>
+                <optgroup label="Re-Exam Groups">
+                    <?php foreach ($re_exam_groups as $group): ?>
+                        <option value="reexam_<?php echo $group['id']; ?>" <?php if (in_array($group['id'], $current_re_exam_groups)) echo 'selected'; ?>>
+                            <?php echo htmlspecialchars($group['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
             </select>
         </div>
-        <div class="form-group">
-            <label for="sap_id_end">End SAP ID (Optional)</label>
-            <select name="sap_id_range_end" id="sap_id_end" class="student-select">
-                <option></option> 
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group" style="width: 100%;">
+            <label for="manual_student_ids">Add Specific Students by SAP ID (Optional)</label>
+            <select name="manual_student_ids[]" id="manual_student_ids" class="student-select" multiple>
                 <?php foreach ($students as $student): ?>
-                    <option value="<?php echo htmlspecialchars($student['sap_id']); ?>" <?php if ($student['sap_id'] == $quiz['sap_id_range_end']) echo 'selected'; ?>>
+                    <option value="<?php echo htmlspecialchars($student['sap_id']); ?>" <?php if (in_array($student['sap_id'], $current_manual_saps)) echo 'selected'; ?>>
                         <?php echo htmlspecialchars($student['full_name'] . ' (' . $student['sap_id'] . ')'); ?>
                     </option>
                 <?php endforeach; ?>
@@ -193,14 +223,16 @@ document.addEventListener('DOMContentLoaded', function() {
         placeholder: "Search by Name or SAP ID",
         allowClear: true
     });
+    $('.group-select').select2({
+        placeholder: "Select groups",
+        allowClear: true
+    });
 
     // --- Existing script for cascading dropdowns ---
     const schoolSelect = document.getElementById('school_id');
     const courseSelect = document.getElementById('course_id');
-    const yearSelect = document.getElementById('graduation_year');
 
     const preselectedCourseId = <?php echo json_encode($quiz['course_id']); ?>;
-    const preselectedYear = <?php echo json_encode($quiz['graduation_year']); ?>;
 
     async function populateCourses(schoolId, selectedCourseId = null) {
         courseSelect.innerHTML = '<option value="">Loading...</option>';
@@ -218,35 +250,12 @@ document.addEventListener('DOMContentLoaded', function() {
         courseSelect.disabled = false;
     }
 
-    async function populateYears(courseId, selectedYear = null) {
-        yearSelect.innerHTML = '<option value="">Loading...</option>';
-        yearSelect.disabled = true;
-        const response = await fetch(BASE_URL + `api/shared/get_years_by_course.php?course_id=${courseId}`);
-        const years = await response.json();
-        yearSelect.innerHTML = '<option value="" disabled>-- Select a Year --</option>';
-        years.forEach(year => {
-            const option = new Option(year, year);
-            if (year == selectedYear) {
-                option.selected = true;
-            }
-            yearSelect.add(option);
-        });
-        yearSelect.disabled = false;
-    }
-
     schoolSelect.addEventListener('change', function() {
         populateCourses(this.value);
-        yearSelect.innerHTML = '<option value="">-- Select Course First --</option>';
-        yearSelect.disabled = true;
-    });
-
-    courseSelect.addEventListener('change', function() {
-        populateYears(this.value);
     });
 
     async function initializeDropdowns() {
         await populateCourses(schoolSelect.value, preselectedCourseId);
-        await populateYears(courseSelect.value, preselectedYear);
     }
     
     initializeDropdowns();

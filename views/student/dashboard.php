@@ -23,65 +23,58 @@
   $student_sap_id = $student_info['sap_id'] ?? null;
   $quizzes = [];
 
-  // --- NEW: Fetch student's specializations ---
-  $student_specializations = [];
-  $stmt_spec = $pdo->prepare("SELECT specialization_id FROM student_specializations WHERE student_id = ?");
-  $stmt_spec->execute([$student_user_id]);
-  $student_specializations = $stmt_spec->fetchAll(PDO::FETCH_COLUMN);
-
-  // --- MODIFIED: Fetch Available Quizzes with SAP ID and Specialization check ---
-  if ($student_course_id && $student_grad_year) {
-      // Base SQL query
-      $sql = "SELECT 
-                q.id, q.title, q.start_time, es.name as status_name
-              FROM quizzes q
-              JOIN exam_statuses es ON q.status_id = es.id
-              JOIN students s ON s.user_id = :student_user_id
-              WHERE q.course_id = :course_id 
-              AND q.graduation_year = :graduation_year
-              AND (:sap_id IS NULL OR (
-                  (q.sap_id_range_start IS NULL OR s.sap_id >= q.sap_id_range_start) AND
-                  (q.sap_id_range_end IS NULL OR s.sap_id <= q.sap_id_range_end)
-              ))
-              AND (
-                (NOW() BETWEEN q.start_time AND q.end_time AND es.name != 'Completed')
-                OR
-                (es.name IN ('Lobby Open', 'In Progress'))
-              )";
-      
-      // Build the execution parameters array
-      $params = [
-          ':student_user_id' => $student_user_id,
-          ':course_id' => $student_course_id,
-          ':graduation_year' => $student_grad_year,
-          ':sap_id' => $student_sap_id
-      ];
-      
-      // NEW: Add specialization filtering logic using named placeholders
-      $specialization_clause = "AND (q.specialization_id IS NULL";
-      if (!empty($student_specializations)) {
-          $spec_placeholders = [];
-          foreach ($student_specializations as $index => $spec_id) {
-              $placeholder = ":spec" . $index;
-              $spec_placeholders[] = $placeholder;
-              $params[$placeholder] = $spec_id;
-          }
-          $in_clause = implode(',', $spec_placeholders);
-          $specialization_clause .= " OR q.specialization_id IN ($in_clause)";
-      }
-      $specialization_clause .= ")";
-      
-      $sql .= " " . $specialization_clause;
-      $sql .= " ORDER BY q.start_time ASC";
-      
-      $stmt_quizzes = $pdo->prepare($sql);
-      
-      // Execute with the combined parameters
-      $stmt_quizzes->execute($params);
-      
-      $quizzes = $stmt_quizzes->fetchAll();
-      
-      // --- NEW: Fetch Published Results ---
+  // --- Fetch Available Quizzes for the Student ---
+  // Base SQL query
+  $sql = "SELECT DISTINCT q.id, q.title, q.start_time, es.name as status_name
+          FROM quizzes q
+          JOIN exam_statuses es ON q.status_id = es.id
+          LEFT JOIN quiz_manual_students qms ON q.id = qms.quiz_id AND qms.student_id = :student_user_id
+          LEFT JOIN quiz_classes qc ON q.id = qc.quiz_id
+          LEFT JOIN classes c ON qc.class_id = c.id
+          LEFT JOIN quiz_batches qb ON q.id = qb.quiz_id
+          LEFT JOIN batches b ON qb.batch_id = b.id
+          LEFT JOIN classes bc ON b.class_id = bc.id
+          LEFT JOIN quiz_electives qe ON q.id = qe.quiz_id
+          LEFT JOIN elective_students es_stu ON qe.elective_id = es_stu.elective_id AND es_stu.student_id = :student_user_id
+          LEFT JOIN quiz_re_exam_groups qrg ON q.id = qrg.quiz_id
+          LEFT JOIN re_exam_group_students regs ON qrg.group_id = regs.group_id AND regs.student_id = :student_user_id
+          JOIN students s ON s.user_id = :student_user_id
+          WHERE (
+              qms.student_id IS NOT NULL
+              OR (
+                  c.id IS NOT NULL AND 
+                  s.course_id = c.course_id AND 
+                  s.graduation_year = c.graduation_year AND 
+                  CAST(s.sap_id AS UNSIGNED) BETWEEN c.sap_id_range_start AND c.sap_id_range_end
+              )
+              OR (
+                  b.id IS NOT NULL AND 
+                  s.course_id = bc.course_id AND 
+                  s.graduation_year = bc.graduation_year AND 
+                  CAST(s.sap_id AS UNSIGNED) BETWEEN b.sap_id_range_start AND b.sap_id_range_end
+              )
+              OR es_stu.student_id IS NOT NULL
+              OR regs.student_id IS NOT NULL
+          )
+          AND (
+            (NOW() BETWEEN q.start_time AND q.end_time AND es.name != 'Completed')
+            OR
+            (es.name IN ('Lobby Open', 'In Progress'))
+          )
+          ORDER BY q.start_time ASC";
+  
+  $params = [
+      ':student_user_id' => $student_user_id
+  ];
+  
+  $stmt_quizzes = $pdo->prepare($sql);
+  
+  // Execute with the combined parameters
+  $stmt_quizzes->execute($params);
+  
+  $quizzes = $stmt_quizzes->fetchAll();
+  
+  // --- NEW: Fetch Published Results ---
       $sql_published = "SELECT q.id as quiz_id, q.title, sa.id as attempt_id, sa.total_score, sa.submitted_at 
                         FROM student_attempts sa
                         JOIN quizzes q ON sa.quiz_id = q.id
@@ -92,10 +85,7 @@
       $stmt_published = $pdo->prepare($sql_published);
       $stmt_published->execute([':student_user_id' => $student_user_id]);
       $published_results = $stmt_published->fetchAll();
-  } else {
-      $published_results = [];
-  }
-?>
+
 
 <div class="manage-container">
     <h2 style="margin-bottom: 10px;">Welcome, <?php echo $studentName; ?>!</h2>

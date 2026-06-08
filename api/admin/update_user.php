@@ -101,9 +101,6 @@ try {
         $stmt_role = $pdo->prepare($sql_role);
         $stmt_role->execute([$full_name, $sap_id, $course_id, $batch, $graduation_year, $user_id]);
 
-        // Clean up specializations if any
-        $stmt_del = $pdo->prepare("DELETE FROM student_specializations WHERE student_id = ?");
-        $stmt_del->execute([$user_id]);
     } elseif ($role_id == 2) { // Faculty
         $sql_role = "UPDATE faculties SET name = ?, sap_id = ?, school_id = ?, is_visiting = ? WHERE user_id = ?";
         $stmt_role = $pdo->prepare($sql_role);

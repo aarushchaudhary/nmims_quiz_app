@@ -1,7 +1,7 @@
 <?php
 /*
  * api/admin/upload_students.php
- * Handles bulk creation of student accounts from an Excel file, including specializations.
+ * Handles bulk creation of student accounts from an Excel file.
  */
 session_start();
 require_once '../../config/database.php';

@@ -20,8 +20,11 @@
   ");
   $students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-  // --- NEW: Fetch specializations for the dropdown ---
-  $specializations = $pdo->query("SELECT id, name FROM specializations ORDER BY name ASC")->fetchAll();
+  // Fetch groups
+  $classes = $pdo->query("SELECT id, name FROM classes ORDER BY name ASC")->fetchAll();
+  $batches = $pdo->query("SELECT id, name FROM batches ORDER BY name ASC")->fetchAll();
+  $electives = $pdo->query("SELECT id, name FROM electives ORDER BY name ASC")->fetchAll();
+  $re_exam_groups = $pdo->query("SELECT id, name FROM re_exam_groups WHERE expires_at > NOW() ORDER BY name ASC")->fetchAll();
 ?>
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -56,25 +59,7 @@
                 <option value="">-- Select School First --</option>
             </select>
         </div>
-        <div class="form-group">
-            <label for="graduation_year">Graduation Year / Batch</label>
-            <select id="graduation_year" name="graduation_year" required disabled>
-                <option value="">-- Select Course First --</option>
-            </select>
-        </div>
     </div>
-    
-    <div class="form-group">
-        <label for="specialization_id">Specialization (Optional)</label>
-        <select id="specialization_id" name="specialization_id">
-            <option value="">-- General Quiz for all Specializations --</option>
-            <?php foreach ($specializations as $spec): ?>
-            <option value="<?php echo $spec['id']; ?>"><?php echo htmlspecialchars($spec['name']); ?></option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-
     <div class="form-row">
       <div class="form-group">
         <label for="start_time">Start Time</label>
@@ -93,21 +78,48 @@
     <h3 style="text-align: center; margin-bottom: 20px;">Student & Question Configuration</h3>
     
     <div class="form-row">
-        <div class="form-group">
-            <label for="sap_id_start">Start SAP ID (Optional)</label>
-            <select name="sap_id_range_start" id="sap_id_start" class="student-select">
-                <option></option> 
-                <?php foreach ($students as $student): ?>
-                    <option value="<?php echo htmlspecialchars($student['sap_id']); ?>">
-                        <?php echo htmlspecialchars($student['full_name'] . ' (' . $student['sap_id'] . ')'); ?>
-                    </option>
-                <?php endforeach; ?>
+        <div class="form-group" style="width: 100%;">
+            <label for="exam_groups">Select Exam Groups</label>
+            <select name="exam_groups[]" id="exam_groups" class="group-select" multiple>
+                <?php if (!empty($classes)): ?>
+                <optgroup label="Classes">
+                    <?php foreach ($classes as $class): ?>
+                        <option value="class_<?php echo $class['id']; ?>"><?php echo htmlspecialchars($class['name']); ?></option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
+
+                <?php if (!empty($batches)): ?>
+                <optgroup label="Batches">
+                    <?php foreach ($batches as $batch): ?>
+                        <option value="batch_<?php echo $batch['id']; ?>"><?php echo htmlspecialchars($batch['name']); ?></option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
+
+                <?php if (!empty($electives)): ?>
+                <optgroup label="Electives">
+                    <?php foreach ($electives as $elective): ?>
+                        <option value="elective_<?php echo $elective['id']; ?>"><?php echo htmlspecialchars($elective['name']); ?></option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
+
+                <?php if (!empty($re_exam_groups)): ?>
+                <optgroup label="Re-Exam Groups">
+                    <?php foreach ($re_exam_groups as $group): ?>
+                        <option value="reexam_<?php echo $group['id']; ?>"><?php echo htmlspecialchars($group['name']); ?></option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endif; ?>
             </select>
         </div>
-        <div class="form-group">
-            <label for="sap_id_end">End SAP ID (Optional)</label>
-            <select name="sap_id_range_end" id="sap_id_end" class="student-select">
-                <option></option> 
+    </div>
+
+    <div class="form-row">
+        <div class="form-group" style="width: 100%;">
+            <label for="manual_student_ids">Add Specific Students by SAP ID (Optional)</label>
+            <select name="manual_student_ids[]" id="manual_student_ids" class="student-select" multiple>
                 <?php foreach ($students as $student): ?>
                     <option value="<?php echo htmlspecialchars($student['sap_id']); ?>">
                         <?php echo htmlspecialchars($student['full_name'] . ' (' . $student['sap_id'] . ')'); ?>
@@ -171,23 +183,24 @@
 <script>
 const BASE_URL = '<?= get_base_url() ?>';
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Select2 on the student dropdowns
+    // Initialize Select2 on the student dropdowns and group dropdowns
     $('.student-select').select2({
         placeholder: "Search by Name or SAP ID",
         allowClear: true
     });
+    $('.group-select').select2({
+        placeholder: "Select groups",
+        allowClear: true
+    });
 
-    // --- Existing script for cascading dropdowns (unchanged) ---
+    // --- Existing script for cascading dropdowns ---
     const schoolSelect = document.getElementById('school_id');
     const courseSelect = document.getElementById('course_id');
-    const yearSelect = document.getElementById('graduation_year');
 
     schoolSelect.addEventListener('change', async function() {
         const schoolId = this.value;
         courseSelect.innerHTML = '<option value="">Loading...</option>';
         courseSelect.disabled = true;
-        yearSelect.innerHTML = '<option value="">-- Select Course First --</option>';
-        yearSelect.disabled = true;
 
         if (!schoolId) return;
 
@@ -200,25 +213,6 @@ document.addEventListener('DOMContentLoaded', function() {
             courseSelect.add(option);
         });
         courseSelect.disabled = false;
-    });
-
-    courseSelect.addEventListener('change', async function() {
-        const courseId = this.value;
-        yearSelect.innerHTML = '<option value="">Loading...</option>';
-        yearSelect.disabled = true;
-
-        if (!courseId) return;
-
-        const response = await fetch(BASE_URL + `api/shared/get_years_by_course.php?course_id=${courseId}`);
-        const years = await response.json();
-        
-        yearSelect.innerHTML = '<option value="" disabled selected>-- Select a Year --</option>';
-        years.forEach(year => {
-            const option = new Option(year, year);
-            yearSelect.add(option);
-        });
-        yearSelect.disabled = false;
-      
     });
 
     // Toggle Negative Marks visibility

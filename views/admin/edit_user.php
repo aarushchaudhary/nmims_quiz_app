@@ -39,7 +39,7 @@
   $courses = $pdo->query("SELECT id, name FROM courses")->fetchAll();
   $schools = $pdo->query("SELECT id, name FROM schools")->fetchAll();
   
-  // --- Fetch specializations for the form ---
+  // --- Fetch courses for the form ---
   $courses_data = $pdo->query("SELECT c.code, c.name as course_name, c.duration_years, s.name as school_name 
                                FROM courses c 
                                JOIN schools s ON c.school_id = s.id")->fetchAll(PDO::FETCH_ASSOC);

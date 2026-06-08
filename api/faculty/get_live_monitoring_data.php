@@ -23,7 +23,7 @@ $offset = ($page - 1) * $limit;
 try {
     // 1. Get quiz info, including specialization
     $stmt_quiz = $pdo->prepare(
-        "SELECT q.specialization_id, q.config_easy_count, q.config_medium_count, q.config_hard_count, es.name as status_name 
+        "SELECT q.config_easy_count, q.config_medium_count, q.config_hard_count, es.name as status_name 
          FROM quizzes q 
          JOIN exam_statuses es ON q.status_id = es.id 
          WHERE q.id = ?"
@@ -38,32 +38,44 @@ try {
     
     $total_questions = ($quiz_info['config_easy_count'] ?? 0) + ($quiz_info['config_medium_count'] ?? 0) + ($quiz_info['config_hard_count'] ?? 0);
     $quiz_status = $quiz_info['status_name'] ?? 'Unknown';
-    $specialization_id = $quiz_info['specialization_id'];
-
-    // 2. Build dynamic queries based on whether the quiz has a specialization
-    $join_clause = '';
-    $where_clause = 'WHERE q.id = ?';
-    $params = [$quiz_id];
-
-    if ($specialization_id !== null) {
-        $join_clause = 'JOIN student_specializations ss ON s.user_id = ss.student_id';
-        $where_clause .= ' AND ss.specialization_id = ?';
-        $params[] = $specialization_id;
-    }
 
     // 3. Get the TOTAL number of students for this quiz for pagination
     $sql_total = "SELECT COUNT(DISTINCT s.user_id) 
                   FROM students s 
-                  JOIN quizzes q ON s.course_id = q.course_id AND s.graduation_year = q.graduation_year
-                  {$join_clause}
-                  {$where_clause}";
+                  LEFT JOIN quiz_manual_students qms ON qms.quiz_id = ? AND qms.student_id = s.user_id
+                  LEFT JOIN quiz_classes qc ON qc.quiz_id = ?
+                  LEFT JOIN classes c ON qc.class_id = c.id
+                  LEFT JOIN quiz_batches qb ON qb.quiz_id = ?
+                  LEFT JOIN batches b ON qb.batch_id = b.id
+                  LEFT JOIN classes bc ON b.class_id = bc.id
+                  LEFT JOIN quiz_electives qe ON qe.quiz_id = ?
+                  LEFT JOIN elective_students es_stu ON qe.elective_id = es_stu.elective_id AND es_stu.student_id = s.user_id
+                  LEFT JOIN quiz_re_exam_groups qrg ON qrg.quiz_id = ?
+                  LEFT JOIN re_exam_group_students regs ON qrg.group_id = regs.group_id AND regs.student_id = s.user_id
+                  WHERE (
+                      qms.student_id IS NOT NULL
+                      OR (
+                          c.id IS NOT NULL AND 
+                          s.course_id = c.course_id AND 
+                          s.graduation_year = c.graduation_year AND 
+                          CAST(s.sap_id AS UNSIGNED) BETWEEN c.sap_id_range_start AND c.sap_id_range_end
+                      )
+                      OR (
+                          b.id IS NOT NULL AND 
+                          s.course_id = bc.course_id AND 
+                          s.graduation_year = bc.graduation_year AND 
+                          CAST(s.sap_id AS UNSIGNED) BETWEEN b.sap_id_range_start AND b.sap_id_range_end
+                      )
+                      OR es_stu.student_id IS NOT NULL
+                      OR regs.student_id IS NOT NULL
+                  )";
     $stmt_total = $pdo->prepare($sql_total);
-    $stmt_total->execute($params);
+    $stmt_total->execute([$quiz_id, $quiz_id, $quiz_id, $quiz_id, $quiz_id]);
     $total_students = $stmt_total->fetchColumn();
     $total_pages = $total_students > 0 ? ceil($total_students / $limit) : 0;
 
     // 4. Fetch one page of students, with disqualified students first
-    $sql_students = "SELECT 
+    $sql_students = "SELECT DISTINCT
                         u.id as user_id, 
                         s.name as name, 
                         s.sap_id, 
@@ -73,14 +85,38 @@ try {
                         sa.is_manually_locked
                     FROM students s
                     JOIN users u ON s.user_id = u.id
-                    JOIN quizzes q ON s.course_id = q.course_id AND s.graduation_year = q.graduation_year
-                    LEFT JOIN student_attempts sa ON s.user_id = sa.student_id AND sa.quiz_id = q.id
-                    {$join_clause}
-                    {$where_clause}
+                    LEFT JOIN student_attempts sa ON s.user_id = sa.student_id AND sa.quiz_id = ?
+                    LEFT JOIN quiz_manual_students qms ON qms.quiz_id = ? AND qms.student_id = s.user_id
+                    LEFT JOIN quiz_classes qc ON qc.quiz_id = ?
+                    LEFT JOIN classes c ON qc.class_id = c.id
+                    LEFT JOIN quiz_batches qb ON qb.quiz_id = ?
+                    LEFT JOIN batches b ON qb.batch_id = b.id
+                    LEFT JOIN classes bc ON b.class_id = bc.id
+                    LEFT JOIN quiz_electives qe ON qe.quiz_id = ?
+                    LEFT JOIN elective_students es_stu ON qe.elective_id = es_stu.elective_id AND es_stu.student_id = s.user_id
+                    LEFT JOIN quiz_re_exam_groups qrg ON qrg.quiz_id = ?
+                    LEFT JOIN re_exam_group_students regs ON qrg.group_id = regs.group_id AND regs.student_id = s.user_id
+                    WHERE (
+                        qms.student_id IS NOT NULL
+                        OR (
+                            c.id IS NOT NULL AND 
+                            s.course_id = c.course_id AND 
+                            s.graduation_year = c.graduation_year AND 
+                            CAST(s.sap_id AS UNSIGNED) BETWEEN c.sap_id_range_start AND c.sap_id_range_end
+                        )
+                        OR (
+                            b.id IS NOT NULL AND 
+                            s.course_id = bc.course_id AND 
+                            s.graduation_year = bc.graduation_year AND 
+                            CAST(s.sap_id AS UNSIGNED) BETWEEN b.sap_id_range_start AND b.sap_id_range_end
+                        )
+                        OR es_stu.student_id IS NOT NULL
+                        OR regs.student_id IS NOT NULL
+                    )
                     ORDER BY sa.is_disqualified DESC, sa.is_manually_locked DESC, s.name ASC
                     LIMIT ? OFFSET ?";
     
-    $student_params = array_merge($params, [$limit, $offset]);
+    $student_params = [$quiz_id, $quiz_id, $quiz_id, $quiz_id, $quiz_id, $quiz_id, $limit, $offset];
     $stmt_students = $pdo->prepare($sql_students);
 
     // Bind parameters dynamically

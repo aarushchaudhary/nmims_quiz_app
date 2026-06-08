@@ -11,8 +11,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
 }
 
 // --- Input Validation ---
-$required_fields = [
-    'quiz_id', 'title', 'school_id', 'course_id', 'graduation_year', 
+    'quiz_id', 'title', 'school_id', 'course_id', 
     'start_time', 'end_time', 'duration_minutes',
     'config_easy_count', 'config_medium_count', 'config_hard_count'
 ];
@@ -29,7 +28,6 @@ foreach ($required_fields as $field) {
 $quiz_id = filter_var($_POST['quiz_id'], FILTER_VALIDATE_INT);
 $title = $_POST['title'];
 $course_id = filter_var($_POST['course_id'], FILTER_VALIDATE_INT);
-$graduation_year = filter_var($_POST['graduation_year'], FILTER_VALIDATE_INT);
 $start_time = $_POST['start_time'];
 $end_time = $_POST['end_time'];
 $duration_minutes = filter_var($_POST['duration_minutes'], FILTER_VALIDATE_INT);
@@ -49,12 +47,28 @@ if ($duration_minutes > $max_duration) {
     exit();
 }
 
-// Optional Fields
-$sap_id_start = !empty($_POST['sap_id_range_start']) ? filter_var($_POST['sap_id_range_start'], FILTER_SANITIZE_NUMBER_INT) : null;
-$sap_id_end = !empty($_POST['sap_id_range_end']) ? filter_var($_POST['sap_id_range_end'], FILTER_SANITIZE_NUMBER_INT) : null;
-// NEW: Handle specialization_id, setting to null if empty
-$specialization_id = !empty($_POST['specialization_id']) ? filter_var($_POST['specialization_id'], FILTER_VALIDATE_INT) : null; 
+// Group arrays
+$classes = [];
+$batches = [];
+$electives = [];
+$re_exam_groups = [];
 
+if (isset($_POST['exam_groups']) && is_array($_POST['exam_groups'])) {
+    foreach ($_POST['exam_groups'] as $group) {
+        if (strpos($group, 'class_') === 0) {
+            $classes[] = (int) substr($group, 6);
+        } elseif (strpos($group, 'batch_') === 0) {
+            $batches[] = (int) substr($group, 6);
+        } elseif (strpos($group, 'elective_') === 0) {
+            $electives[] = (int) substr($group, 9);
+        } elseif (strpos($group, 'reexam_') === 0) {
+            $re_exam_groups[] = (int) substr($group, 7);
+        }
+    }
+}
+
+// Manual students
+$manual_saps = isset($_POST['manual_student_ids']) && is_array($_POST['manual_student_ids']) ? $_POST['manual_student_ids'] : [];
 // Configuration
 $config_easy_count = filter_var($_POST['config_easy_count'], FILTER_VALIDATE_INT);
 $config_medium_count = filter_var($_POST['config_medium_count'], FILTER_VALIDATE_INT);
@@ -71,38 +85,32 @@ $faculty_id = $_SESSION['user_id'];
 $sql = "UPDATE quizzes SET
             title = :title,
             course_id = :course_id,
-            graduation_year = :graduation_year,
             start_time = :start_time,
             end_time = :end_time,
             duration_minutes = :duration_minutes,
-            sap_id_range_start = :sap_id_start,
-            sap_id_range_end = :sap_id_end,
             config_easy_count = :easy_count,
             config_medium_count = :medium_count,
             config_hard_count = :hard_count,
-            specialization_id = :specialization_id,
             allow_calculator = :allow_calculator,
             enable_negative_marking = :enable_negative_marking,
             negative_marks_mcq = :negative_marks_mcq,
             negative_marks_msq = :negative_marks_msq,
             negative_marks_descriptive = :negative_marks_descriptive
-        WHERE id = :quiz_id AND faculty_id = :faculty_id"; // Security check to ensure ownership
+        WHERE id = :quiz_id AND faculty_id = :faculty_id";
 
 try {
+    $pdo->beginTransaction();
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':title' => $title,
         ':course_id' => $course_id,
-        ':graduation_year' => $graduation_year,
         ':start_time' => $start_time,
         ':end_time' => $end_time,
         ':duration_minutes' => $duration_minutes,
-        ':sap_id_start' => $sap_id_start,
-        ':sap_id_end' => $sap_id_end,
         ':easy_count' => $config_easy_count,
         ':medium_count' => $config_medium_count,
         ':hard_count' => $config_hard_count,
-        ':specialization_id' => $specialization_id,
         ':allow_calculator' => $allow_calculator,
         ':enable_negative_marking' => $enable_negative_marking,
         ':negative_marks_mcq' => $negative_marks_mcq,
@@ -112,11 +120,61 @@ try {
         ':faculty_id' => $faculty_id
     ]);
 
+    // Check if quiz was actually updated (meaning the faculty owns it)
+    if ($stmt->rowCount() == 0) {
+        $stmt_check = $pdo->prepare("SELECT id FROM quizzes WHERE id = ? AND faculty_id = ?");
+        $stmt_check->execute([$quiz_id, $faculty_id]);
+        if (!$stmt_check->fetch()) {
+            throw new PDOException("Unauthorized or quiz not found");
+        }
+    }
+
+    // Delete old mappings
+    $pdo->prepare("DELETE FROM quiz_classes WHERE quiz_id = ?")->execute([$quiz_id]);
+    $pdo->prepare("DELETE FROM quiz_batches WHERE quiz_id = ?")->execute([$quiz_id]);
+    $pdo->prepare("DELETE FROM quiz_electives WHERE quiz_id = ?")->execute([$quiz_id]);
+    $pdo->prepare("DELETE FROM quiz_re_exam_groups WHERE quiz_id = ?")->execute([$quiz_id]);
+    $pdo->prepare("DELETE FROM quiz_manual_students WHERE quiz_id = ?")->execute([$quiz_id]);
+
+    // Insert new mappings
+    if (!empty($classes)) {
+        $stmt_c = $pdo->prepare("INSERT INTO quiz_classes (quiz_id, class_id) VALUES (?, ?)");
+        foreach ($classes as $cid) $stmt_c->execute([$quiz_id, $cid]);
+    }
+    if (!empty($batches)) {
+        $stmt_b = $pdo->prepare("INSERT INTO quiz_batches (quiz_id, batch_id) VALUES (?, ?)");
+        foreach ($batches as $bid) $stmt_b->execute([$quiz_id, $bid]);
+    }
+    if (!empty($electives)) {
+        $stmt_e = $pdo->prepare("INSERT INTO quiz_electives (quiz_id, elective_id) VALUES (?, ?)");
+        foreach ($electives as $eid) $stmt_e->execute([$quiz_id, $eid]);
+    }
+    if (!empty($re_exam_groups)) {
+        $stmt_r = $pdo->prepare("INSERT INTO quiz_re_exam_groups (quiz_id, group_id) VALUES (?, ?)");
+        foreach ($re_exam_groups as $rid) $stmt_r->execute([$quiz_id, $rid]);
+    }
+
+    if (!empty($manual_saps)) {
+        $stmt_s = $pdo->prepare("SELECT user_id FROM students WHERE sap_id = ?");
+        $stmt_ms = $pdo->prepare("INSERT IGNORE INTO quiz_manual_students (quiz_id, student_id) VALUES (?, ?)");
+        foreach ($manual_saps as $sap) {
+            $stmt_s->execute([$sap]);
+            if ($row = $stmt_s->fetch()) {
+                $stmt_ms->execute([$quiz_id, $row['user_id']]);
+            }
+        }
+    }
+
+    $pdo->commit();
+
     // Redirect back to the view page with a success message
     redirect('views/faculty/view_quiz.php?id=' . $quiz_id . '&updated=true');
     exit();
 
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     // In a real application, you would log this error.
     error_log('Quiz update failed: ' . $e->getMessage());
     redirect('views/faculty/edit_quiz.php?id=' . $quiz_id . '&error=db_error');
