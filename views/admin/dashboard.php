@@ -27,6 +27,8 @@
             <a href="manage_courses.php" class="button-red" style="width:auto; background-color:#ffc107; color:#333;">Manage Courses</a>
             <a href="exam_groups.php" class="button-red">Exam Groups</a>
             <a href="manage_roles.php" class="button-red" style="width:auto; background-color:#6f42c1;">Manage Roles</a>
+            <a href="cleanup.php" class="button-red" style="width:auto; background-color:#dc3545;">Data Cleanup</a>
+            <a href="demote_students.php" class="button-red" style="width:auto; background-color:#fd7e14;">Demote Students</a>
         </div>
     </div>
 </div>

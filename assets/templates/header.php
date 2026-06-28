@@ -5,7 +5,16 @@ if (session_status() == PHP_SESSION_NONE) {
 // Load base URL configuration
 require_once __DIR__ . '/../../config/base_url.php';
 
+// --- Global Password Change Enforcement ---
+$currentScript = $_SERVER['SCRIPT_FILENAME'] ?? '';
+$isChangePasswordPage = strpos(str_replace('\\', '/', $currentScript), '/views/student/change_password.php') !== false;
+$isLogoutPage = strpos(str_replace('\\', '/', $currentScript), '/logout.php') !== false;
+$isApi = strpos(str_replace('\\', '/', $currentScript), '/api/') !== false;
 
+if (!empty($_SESSION['force_password_change']) && !$isChangePasswordPage && !$isLogoutPage && !$isApi) {
+    header('Location: ' . get_base_url() . 'views/student/change_password.php');
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

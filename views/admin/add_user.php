@@ -69,7 +69,7 @@
                 <h4>Staff Details</h4>
                 
                 <div class="form-row" id="visiting-faculty-group" style="display:none;">
-                    <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                    <div class="form-group" style="display: flex; flex-direction: row; align-items: center; gap: 10px;">
                         <input type="checkbox" id="is_visiting" name="is_visiting" style="width: auto; height: 18px;">
                         <label for="is_visiting" style="margin: 0;">Visiting Faculty (Allows non-NMIMS email)</label>
                     </div>

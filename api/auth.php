@@ -15,7 +15,11 @@ $password = $data['password'] ?? '';
 $force_login = $data['force'] ?? false;
 
 // Fetch user data
-$sql_user = "SELECT id, password_hash, active_session_id, role_id FROM users WHERE email = :email AND is_active = 1";
+// Fetch user data
+$sql_user = "SELECT u.id, u.password_hash, u.active_session_id, u.role_id, s.sap_id 
+             FROM users u 
+             LEFT JOIN students s ON u.id = s.user_id 
+             WHERE u.email = :email AND u.is_active = 1";
 $stmt_user = $pdo->prepare($sql_user);
 $stmt_user->execute(['email' => $email]);
 $user = $stmt_user->fetch();
@@ -58,5 +62,11 @@ $_SESSION['user_id'] = $user['id'];
 $_SESSION['role_id'] = $user['role_id'];
 $_SESSION['full_name'] = $details['full_name'];
 $_SESSION['role_name'] = $details['role_name'];
+
+if ($user['role_id'] == 4 && $password === $user['sap_id']) {
+    $_SESSION['force_password_change'] = true;
+} else {
+    $_SESSION['force_password_change'] = false;
+}
 
 echo json_encode(['status' => 'success', 'message' => 'Login successful.']);

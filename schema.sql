@@ -57,28 +57,12 @@ CREATE TABLE `electives` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `elective_students` (
-    `elective_id` INT NOT NULL,
-    `student_id` INT NOT NULL,
-    PRIMARY KEY (`elective_id`, `student_id`),
-    FOREIGN KEY (`elective_id`) REFERENCES `electives`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 CREATE TABLE `re_exam_groups` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(150) NOT NULL UNIQUE,
     `expires_at` DATETIME NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `re_exam_group_students` (
-    `group_id` INT NOT NULL,
-    `student_id` INT NOT NULL,
-    PRIMARY KEY (`group_id`, `student_id`),
-    FOREIGN KEY (`group_id`) REFERENCES `re_exam_groups`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `question_types` (
@@ -145,6 +129,22 @@ CREATE TABLE `admins` (
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE `elective_students` (
+    `elective_id` INT NOT NULL,
+    `student_id` INT NOT NULL,
+    PRIMARY KEY (`elective_id`, `student_id`),
+    FOREIGN KEY (`elective_id`) REFERENCES `electives`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `re_exam_group_students` (
+    `group_id` INT NOT NULL,
+    `student_id` INT NOT NULL,
+    PRIMARY KEY (`group_id`, `student_id`),
+    FOREIGN KEY (`group_id`) REFERENCES `re_exam_groups`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE `heads` (
   `id`      INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL UNIQUE,
@@ -186,6 +186,7 @@ CREATE TABLE `quizzes` (
   `title`                      VARCHAR(150) NOT NULL,
   `faculty_id`                 INT          NOT NULL,
   `course_id`                  INT          NOT NULL,
+  `specialization_id`          INT          DEFAULT NULL,
   `show_results_immediately`   BOOLEAN      NOT NULL DEFAULT TRUE,
   `start_time`                 DATETIME     NOT NULL,
   `end_time`                   DATETIME     NOT NULL,
@@ -369,4 +370,3 @@ INSERT INTO `schools` (`id`, `name`) VALUES
 (3, 'SOL'),
 (4, 'SOC'),
 (5, 'SBM');
-
