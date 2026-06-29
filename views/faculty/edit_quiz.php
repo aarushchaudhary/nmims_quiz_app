@@ -95,6 +95,7 @@
 
     <div class="form-row">
       <div class="form-group"><label>Start Time</label><input type="datetime-local" name="start_time" value="<?php echo format_datetime_for_input($quiz['start_time']); ?>" required></div>
+      <div class="form-group"><label>End Time</label><input type="datetime-local" name="end_time" value="<?php echo format_datetime_for_input($quiz['end_time']); ?>" required></div>
       <div class="form-group"><label>Duration (Minutes)</label><input type="number" name="duration_minutes" value="<?php echo htmlspecialchars($quiz['duration_minutes']); ?>" min="1" required></div>
     </div>
     <hr style="margin: 25px 0;">

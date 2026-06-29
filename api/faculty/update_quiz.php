@@ -11,6 +11,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
 }
 
 // --- Input Validation ---
+$required_fields = [
     'quiz_id', 'title', 'school_id', 'course_id', 
     'start_time', 'end_time', 'duration_minutes',
     'config_easy_count', 'config_medium_count', 'config_hard_count'
