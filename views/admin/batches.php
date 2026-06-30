@@ -206,7 +206,16 @@
             }
 
             searchTimeout = setTimeout(() => {
-                fetch('<?= get_base_url() ?>api/admin/search_student.php?q=' + encodeURIComponent(query))
+                let url = '<?= get_base_url() ?>api/admin/search_student.php?q=' + encodeURIComponent(query);
+                const courseId = document.getElementById('course_id').value;
+                if (courseId) {
+                    url += '&course_id=' + encodeURIComponent(courseId);
+                }
+                const classId = document.getElementById('class_id').value;
+                if (classId) {
+                    url += '&class_id=' + encodeURIComponent(classId);
+                }
+                fetch(url)
                     .then(res => res.json())
                     .then(data => {
                         resultsContainer.innerHTML = '';

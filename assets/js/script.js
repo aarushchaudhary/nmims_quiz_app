@@ -11,7 +11,7 @@
 // - Built-in server (localhost:8080): /
 // - XAMPP subdirectory: /nmims_quiz_app/
 // - Production: your actual domain
-const BASE_URL = window.location.pathname.includes('nmims_quiz_app') ? '/nmims_quiz_app/' : '/';
+window.BASE_URL = window.BASE_URL || (window.location.pathname.includes('nmims_quiz_app') ? '/nmims_quiz_app/' : '/');
 
 /* ========== LOGIN MODULE ========== */
 document.addEventListener('DOMContentLoaded', function() {

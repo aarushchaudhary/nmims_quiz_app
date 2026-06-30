@@ -185,7 +185,12 @@
             }
 
             searchTimeout = setTimeout(() => {
-                fetch('<?= get_base_url() ?>api/admin/search_student.php?q=' + encodeURIComponent(query))
+                let url = '<?= get_base_url() ?>api/admin/search_student.php?q=' + encodeURIComponent(query);
+                const courseId = document.getElementById('course_id').value;
+                if (courseId) {
+                    url += '&course_id=' + encodeURIComponent(courseId);
+                }
+                fetch(url)
                     .then(res => res.json())
                     .then(data => {
                         resultsContainer.innerHTML = '';
@@ -254,8 +259,8 @@
             
             row.innerHTML = `
                 <div style="flex: 1;">
-                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">Derived Name</label>
-                    <input type="text" name="class_name[]" class="input-field" value="${derivedName}" readonly style="margin-bottom:0; background-color: #e9ecef; cursor: not-allowed; color: #495057;">
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">Class Name</label>
+                    <input type="text" name="class_name[]" class="input-field" value="${derivedName}" required style="margin-bottom:0;">
                 </div>
                 <div class="autocomplete-container" style="flex: 1;">
                     <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">Section ${letter} Start SAP ID</label>

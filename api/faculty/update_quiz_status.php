@@ -29,6 +29,30 @@ if (!is_numeric($quiz_id) || !is_numeric($new_status_id)) {
 try {
     $pdo->beginTransaction();
     
+    // --- Verify Question Requirements if Starting ---
+    if ($new_status_id == 2 || $new_status_id == 3) {
+        $stmt_quiz = $pdo->prepare("SELECT config_easy_count, config_medium_count, config_hard_count FROM quizzes WHERE id = :quiz_id AND faculty_id = :faculty_id");
+        $stmt_quiz->execute([':quiz_id' => $quiz_id, ':faculty_id' => $faculty_id]);
+        $quiz = $stmt_quiz->fetch();
+        
+        if ($quiz) {
+            $q_stmt = $pdo->prepare("SELECT difficulty_id, COUNT(*) as count FROM questions WHERE quiz_id = :quiz_id GROUP BY difficulty_id");
+            $q_stmt->execute([':quiz_id' => $quiz_id]);
+            $actual_counts = [];
+            while ($row = $q_stmt->fetch()) {
+                $actual_counts[$row['difficulty_id']] = $row['count'];
+            }
+            
+            $actual_easy = $actual_counts[1] ?? 0;
+            $actual_medium = $actual_counts[2] ?? 0;
+            $actual_hard = $actual_counts[3] ?? 0;
+            
+            if ($actual_easy < $quiz['config_easy_count'] || $actual_medium < $quiz['config_medium_count'] || $actual_hard < $quiz['config_hard_count']) {
+                throw new Exception('Cannot start quiz. Required questions have not been added yet.');
+            }
+        }
+    }
+
     $sql = "UPDATE quizzes SET status_id = :new_status_id WHERE id = :quiz_id AND faculty_id = :faculty_id";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([

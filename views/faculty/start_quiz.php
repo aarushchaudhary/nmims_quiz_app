@@ -18,7 +18,8 @@
   $faculty_id = $_SESSION['user_id'];
 
   // --- Fetch Quiz Details ---
-  $sql = "SELECT q.title, es.name as status_name 
+  $sql = "SELECT q.title, es.name as status_name, 
+                 q.config_easy_count, q.config_medium_count, q.config_hard_count
           FROM quizzes q 
           JOIN exam_statuses es ON q.status_id = es.id
           WHERE q.id = :quiz_id AND q.faculty_id = :faculty_id";
@@ -30,11 +31,60 @@
       header('Location: manage_quizzes.php');
       exit();
   }
+
+  // --- Verify Question Requirements ---
+  $q_stmt = $pdo->prepare("SELECT difficulty_id, COUNT(*) as count FROM questions WHERE quiz_id = :quiz_id GROUP BY difficulty_id");
+  $q_stmt->execute([':quiz_id' => $quiz_id]);
+  $actual_counts = [];
+  while ($row = $q_stmt->fetch()) {
+      $actual_counts[$row['difficulty_id']] = $row['count'];
+  }
+  
+  $actual_easy = $actual_counts[1] ?? 0;
+  $actual_medium = $actual_counts[2] ?? 0;
+  $actual_hard = $actual_counts[3] ?? 0;
+
+  $meets_requirements = ($actual_easy >= $quiz['config_easy_count'] &&
+                         $actual_medium >= $quiz['config_medium_count'] &&
+                         $actual_hard >= $quiz['config_hard_count']);
+
+  $missing_easy = max(0, $quiz['config_easy_count'] - $actual_easy);
+  $missing_medium = max(0, $quiz['config_medium_count'] - $actual_medium);
+  $missing_hard = max(0, $quiz['config_hard_count'] - $actual_hard);
+
+  $missing_parts = [];
+  if ($missing_easy > 0) $missing_parts[] = "$missing_easy Easy";
+  if ($missing_medium > 0) $missing_parts[] = "$missing_medium Medium";
+  if ($missing_hard > 0) $missing_parts[] = "$missing_hard Hard";
+  $missing_text = implode(', ', $missing_parts);
+
+  // Parse the title
+  $title_parts = explode(' - ', $quiz['title']);
+  if (count($title_parts) >= 4) {
+      $school = trim($title_parts[0]);
+      $course = trim($title_parts[1]);
+      $display_title = trim($title_parts[2]);
+      $sections = isset($title_parts[4]) ? trim($title_parts[4]) : 'N/A';
+  } else {
+      $display_title = $quiz['title'];
+      $school = 'N/A';
+      $course = 'N/A';
+      $sections = 'N/A';
+  }
 ?>
 
 <div class="manage-container">
 
-    <h2 style="text-align: center;"><?php echo htmlspecialchars($quiz['title']); ?></h2>
+    <div class="quiz-header-card" style="background: #fff; padding: 25px; border-radius: 10px; border: 1px solid #e0e0e0; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-align: center;">
+        <h2 style="margin-top: 0; margin-bottom: 10px; color: #333; font-size: 1.8em;"><?php echo htmlspecialchars($display_title); ?></h2>
+        <?php if ($school !== 'N/A'): ?>
+            <p style="margin: 0; color: #666; font-size: 1.05em;">
+                <strong>School:</strong> <?php echo htmlspecialchars($school); ?> &nbsp;|&nbsp;
+                <strong>Course:</strong> <?php echo htmlspecialchars($course); ?> &nbsp;|&nbsp;
+                <strong>Sections:</strong> <?php echo htmlspecialchars($sections); ?>
+            </p>
+        <?php endif; ?>
+    </div>
     
     <div id="message-area">
     <?php
@@ -43,18 +93,34 @@
     ?>
     </div>
 
-    <div class="section-box control-panel">
-        <h3>Live Exam Control</h3>
-        <p>Current Status: <strong style="font-size: 18px;" id="current-status-text"><?php echo htmlspecialchars($quiz['status_name']); ?></strong></p>
-        <div class="button-group" id="control-buttons">
-            <?php if ($quiz['status_name'] == 'Not Started'): ?>
-                <button data-new-status-id="2" class="btn-open-lobby">Open Lobby</button>
-            <?php elseif ($quiz['status_name'] == 'Lobby Open'): ?>
-                <button data-new-status-id="3" class="btn-start-exam">Start Exam Now</button>
-            <?php elseif ($quiz['status_name'] == 'In Progress'): ?>
-                <button data-new-status-id="4" class="btn-end-exam">End Exam Now</button>
+    <div class="section-box control-panel" style="background: #fdfdfd; border: 1px solid #eaeaea; border-radius: 10px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px; text-align: center;">
+        <h3 style="margin-top: 0; color: #444; font-size: 1.4em;">Live Exam Control</h3>
+        <div style="margin-bottom: 25px;">
+            <?php 
+                $status_color = '#6c757d';
+                if ($quiz['status_name'] == 'Lobby Open') $status_color = '#17a2b8';
+                if ($quiz['status_name'] == 'In Progress') $status_color = '#28a745';
+                if ($quiz['status_name'] == 'Completed') $status_color = '#20c997';
+            ?>
+            <span id="current-status-text" style="color: <?php echo $status_color; ?>; font-size: 1.2em; background: rgba(0,0,0,0.05); padding: 5px 12px; border-radius: 20px; font-weight: bold;"><?php echo htmlspecialchars($quiz['status_name']); ?></span>
+        </div>
+        
+        <div class="button-group" id="control-buttons" style="display: flex; justify-content: center; flex-direction: column; align-items: center;">
+            <?php if (!$meets_requirements && $quiz['status_name'] == 'Not Started'): ?>
+                <p style="color: #555; font-size: 1.1em; margin: 0 0 15px 0;">
+                    Please add <strong><?php echo $missing_text; ?></strong> more questions to start the exam.
+                </p>
+                <a href="view_quiz.php?id=<?php echo $quiz_id; ?>" class="button-red" style="text-decoration: none; padding: 10px 25px; display: inline-block;">Add Questions</a>
             <?php else: ?>
-                <p style="font-weight: bold; font-size: 18px;">This exam is completed.</p>
+                <?php if ($quiz['status_name'] == 'Not Started'): ?>
+                    <button data-new-status-id="2" class="btn-open-lobby" style="padding: 12px 30px; font-size: 1.1em;">Open Lobby</button>
+                <?php elseif ($quiz['status_name'] == 'Lobby Open'): ?>
+                    <button data-new-status-id="3" class="btn-start-exam" style="padding: 12px 30px; font-size: 1.1em; background-color: #28a745;">Start Exam Now</button>
+                <?php elseif ($quiz['status_name'] == 'In Progress'): ?>
+                    <button data-new-status-id="4" class="btn-end-exam" style="padding: 12px 30px; font-size: 1.1em;">End Exam Now</button>
+                <?php else: ?>
+                    <p style="font-weight: bold; font-size: 18px; color: #444; background: #f0f0f0; padding: 15px 30px; border-radius: 8px; display: inline-block; margin: 0;">This exam is completed.</p>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>

@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
 
 // --- Input Validation ---
 $required_fields = [
-    'quiz_id', 'title', 'school_id', 'course_id', 
+    'quiz_id', 'title', 'school_id', 'course_ids', 
     'start_time', 'end_time', 'duration_minutes',
     'config_easy_count', 'config_medium_count', 'config_hard_count'
 ];
@@ -28,7 +28,11 @@ foreach ($required_fields as $field) {
 // --- Data Preparation ---
 $quiz_id = filter_var($_POST['quiz_id'], FILTER_VALIDATE_INT);
 $title = $_POST['title'];
-$course_id = filter_var($_POST['course_id'], FILTER_VALIDATE_INT);
+$school_id = filter_var($_POST['school_id'], FILTER_VALIDATE_INT);
+
+// For multiple courses, we take the first one as the primary course_id for the quizzes table
+$course_ids = is_array($_POST['course_ids']) ? $_POST['course_ids'] : [$_POST['course_ids']];
+$course_id = (int)$course_ids[0];
 $start_time = $_POST['start_time'];
 $end_time = $_POST['end_time'];
 $duration_minutes = filter_var($_POST['duration_minutes'], FILTER_VALIDATE_INT);

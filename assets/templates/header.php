@@ -27,6 +27,13 @@ if (!empty($_SESSION['force_password_change']) && !$isChangePasswordPage && !$is
     
     <!-- Consolidated stylesheet: Replaces base.css, components.css, login.css, manage.css, exam.css -->
     <link rel="stylesheet" href="<?= get_asset_url('assets/css/main.css') ?>" />
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <script>
+        window.BASE_URL = '<?= get_base_url() ?>';
+    </script>
 </head>
 <body>
     <header class="ribbon">
@@ -45,8 +52,16 @@ if (!empty($_SESSION['force_password_change']) && !$isChangePasswordPage && !$is
                 $currentScript = $_SERVER['SCRIPT_FILENAME'] ?? '';
                 $isStudentPage = strpos(str_replace('\\', '/', $currentScript), '/views/student/') !== false;
                 if (!$isStudentPage):
+                    $backText = isset($customBackButtonText) ? $customBackButtonText : '&#8592; Back';
+                    $backUrl = isset($customBackButtonUrl) ? $customBackButtonUrl : 'javascript:history.back()';
                 ?>
-                <a href="javascript:history.back()" class="back-button">&#8592; Back</a>
+                <a href="<?php echo $backUrl; ?>" class="back-button"><?php echo $backText; ?></a>
+                <?php endif; ?>
+
+                <?php
+                if (isset($customProceedButtonText) && isset($customProceedButtonUrl)):
+                ?>
+                <a href="<?php echo $customProceedButtonUrl; ?>" class="back-button" style="background-color: #28a745;"><?php echo $customProceedButtonText; ?></a>
                 <?php endif; ?>
                 
                 <a href="<?= get_base_url() ?>index.php" class="home-button">Home</a>

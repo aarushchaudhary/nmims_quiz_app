@@ -32,7 +32,10 @@
 
 <div class="manage-container">
 
-    <h2>Existing Questions (<span id="question-count"><?php echo count($questions); ?></span>)</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">Existing Questions (<span id="question-count"><?php echo count($questions); ?></span>)</h2>
+        <a href="view_quiz.php?id=<?php echo $quiz_id; ?>" class="button-red" style="width: auto; padding: 10px 20px; text-decoration: none;">+ Add More Ques</a>
+    </div>
 
     <table class="data-table">
         <thead>

@@ -490,6 +490,11 @@ main {
   color: white;
 }
 
+.btn-evaluate {
+  background-color: #fd7e14;
+  color: white;
+}
+
 .btn-logs {
   background-color: #e83e8c;
   color: white;
