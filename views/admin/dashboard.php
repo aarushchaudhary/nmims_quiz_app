@@ -64,8 +64,8 @@
                 <td style="padding: 10px 8px; color: #555;">Add, edit, or remove courses. Each course is linked to a school.</td>
             </tr>
             <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px 8px; font-weight: bold; color: #e60000;">Exam Groups</td>
-                <td style="padding: 10px 8px; color: #555;">Manage Classes, Batches, Electives, and Re-Exam Groups. These define which students get assigned to quizzes by SAP ID ranges.</td>
+                <td style="padding: 10px 8px; font-weight: bold; color: #e60000;">Create Student Groups</td>
+                <td style="padding: 10px 8px; color: #555;">Manage Sections, Batches, Electives, and Re-Exam Groups. These define which students get assigned to quizzes by SAP ID ranges.</td>
             </tr>
             <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 10px 8px; font-weight: bold; color: #6f42c1;">Manage Roles</td>
@@ -104,7 +104,7 @@
             <a href="user_management.php" class="button-red" style="width:auto;">Manage Users</a>
             <a href="manage_schools.php" class="button-red" style="width:auto; background-color:#17a2b8;">Manage Schools</a>
             <a href="manage_courses.php" class="button-red" style="width:auto; background-color:#ffc107; color:#333;">Manage Courses</a>
-            <a href="exam_groups.php" class="button-red">Exam Groups</a>
+            <a href="exam_groups.php" class="button-red">Create Student Groups</a>
             <a href="manage_roles.php" class="button-red" style="width:auto; background-color:#6f42c1;">Manage Roles</a>
             <a href="cleanup.php" class="button-red" style="width:auto; background-color:#dc3545;">Data Cleanup</a>
             <a href="demote_students.php" class="button-red" style="width:auto; background-color:#fd7e14;">Demote Students</a>

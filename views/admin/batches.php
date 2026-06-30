@@ -8,8 +8,14 @@
       exit();
   }
 
-  // Fetch all classes for the dropdown
-  $classes = $pdo->query("SELECT * FROM classes ORDER BY name ASC")->fetchAll();
+  // Fetch schools
+  $schools = $pdo->query("SELECT * FROM schools ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+  
+  // Fetch courses
+  $courses = $pdo->query("SELECT * FROM courses ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+  
+  // Fetch classes
+  $classes = $pdo->query("SELECT * FROM classes ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
   // Fetch batches with their associated class
   $batches = $pdo->query("
@@ -17,7 +23,7 @@
       FROM batches b 
       JOIN classes c ON b.class_id = c.id 
       ORDER BY c.name ASC, b.name ASC
-  ")->fetchAll();
+  ")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <style>
@@ -60,34 +66,52 @@
     ?>
     
     <div class="section-box">
-        <h3>Add New Batch</h3>
-        <form action="<?= get_base_url() ?>api/admin/add_batch.php" method="POST" style="display:flex; flex-direction:column; gap: 15px;">
+        <h3>Add New Batch(es)</h3>
+        <form action="<?= get_base_url() ?>api/admin/add_batch.php" method="POST" id="addBatchForm" style="display:flex; flex-direction:column; gap: 20px;">
+            
             <div style="display:flex; gap: 15px;">
-                <input type="text" name="batch_name" class="input-field" placeholder="Enter batch name (e.g., B1, B2)" required style="flex: 1;">
+                <select name="school_id" id="school_id" class="input-field" required style="flex: 1;">
+                    <option value="">Select School</option>
+                    <?php foreach ($schools as $school): ?>
+                        <option value="<?php echo $school['id']; ?>"><?php echo htmlspecialchars($school['name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                
+                <select name="course_id" id="course_id" class="input-field" required style="flex: 1;">
+                    <option value="">Select Course</option>
+                </select>
                 
                 <select name="class_id" id="class_id" class="input-field" required style="flex: 1;">
-                    <option value="">Select Class</option>
-                    <?php foreach ($classes as $cls): ?>
-                        <option value="<?php echo $cls['id']; ?>"><?php echo htmlspecialchars($cls['name']); ?></option>
-                    <?php endforeach; ?>
+                    <option value="">Select Class (Section)</option>
                 </select>
             </div>
 
-            <div style="display:flex; gap: 15px;">
-                <div class="autocomplete-container" style="flex: 1;">
-                    <input type="text" id="sap_id_range_start_display" class="input-field" placeholder="Search Start SAP ID (Name/ID)" required style="width: 100%; box-sizing: border-box;" autocomplete="off" onkeyup="searchStudent(this, 'sap_id_range_start')">
-                    <input type="hidden" name="sap_id_range_start" id="sap_id_range_start">
-                    <div id="sap_id_range_start_results" class="autocomplete-results" style="display: none;"></div>
-                </div>
-                
-                <div class="autocomplete-container" style="flex: 1;">
-                    <input type="text" id="sap_id_range_end_display" class="input-field" placeholder="Search End SAP ID (Name/ID)" required style="width: 100%; box-sizing: border-box;" autocomplete="off" onkeyup="searchStudent(this, 'sap_id_range_end')">
-                    <input type="hidden" name="sap_id_range_end" id="sap_id_range_end">
-                    <div id="sap_id_range_end_results" class="autocomplete-results" style="display: none;"></div>
+            <div id="batch-rows-container" style="display:flex; flex-direction:column; gap: 15px;">
+                <div class="batch-row" style="display:flex; gap: 15px; align-items: flex-start; background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; position: relative;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">Batch Name</label>
+                        <input type="text" name="batch_name[]" class="input-field" placeholder="e.g., B1" required style="margin-bottom:0;">
+                    </div>
+                    <div class="autocomplete-container" style="flex: 1.5;">
+                        <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">Start SAP ID</label>
+                        <input type="text" id="sap_id_range_start_display_0" class="input-field sap-search" data-index="0" data-type="start" placeholder="Search (Name/ID)" required style="width: 100%; box-sizing: border-box; margin-bottom:0;" autocomplete="off">
+                        <input type="hidden" name="sap_id_range_start[]" id="sap_id_range_start_0">
+                        <div id="sap_id_range_start_results_0" class="autocomplete-results" style="display: none;"></div>
+                    </div>
+                    <div class="autocomplete-container" style="flex: 1.5;">
+                        <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">End SAP ID</label>
+                        <input type="text" id="sap_id_range_end_display_0" class="input-field sap-search" data-index="0" data-type="end" placeholder="Search (Name/ID)" required style="width: 100%; box-sizing: border-box; margin-bottom:0;" autocomplete="off">
+                        <input type="hidden" name="sap_id_range_end[]" id="sap_id_range_end_0">
+                        <div id="sap_id_range_end_results_0" class="autocomplete-results" style="display: none;"></div>
+                    </div>
+                    <button type="button" class="btn-remove-row" style="display:none; background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-top: 24px;">🗑️</button>
                 </div>
             </div>
 
-            <button type="submit" class="button-red" style="width:auto; align-self: flex-start;">Add Batch</button>
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <button type="button" id="btn-add-row" style="background: #e5f9f0; color: #28a745; border: 1px solid #28a745; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">+ Add Another Batch</button>
+                <button type="submit" class="button-red" style="width:auto; padding: 12px 30px;">Save All Batches</button>
+            </div>
         </form>
     </div>
 
@@ -117,56 +141,151 @@
 </div>
 
 <script>
+    const coursesData = <?php echo json_encode($courses); ?>;
+    const classesData = <?php echo json_encode($classes); ?>;
+
+    const schoolSelect = document.getElementById('school_id');
+    const courseSelect = document.getElementById('course_id');
+    const classSelect = document.getElementById('class_id');
+
+    // Filter courses based on school
+    schoolSelect.addEventListener('change', function() {
+        const schoolId = this.value;
+        courseSelect.innerHTML = '<option value="">Select Course</option>';
+        classSelect.innerHTML = '<option value="">Select Class (Section)</option>';
+        
+        if (schoolId) {
+            const filteredCourses = coursesData.filter(c => c.school_id == schoolId);
+            filteredCourses.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                courseSelect.appendChild(opt);
+            });
+        }
+    });
+
+    // Filter classes based on course
+    courseSelect.addEventListener('change', function() {
+        const courseId = this.value;
+        classSelect.innerHTML = '<option value="">Select Class (Section)</option>';
+        
+        if (courseId) {
+            const filteredClasses = classesData.filter(c => c.course_id == courseId);
+            filteredClasses.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                classSelect.appendChild(opt);
+            });
+        }
+    });
+
     let searchTimeout;
-    function searchStudent(inputElement, hiddenId) {
-        clearTimeout(searchTimeout);
-        const query = inputElement.value;
-        const resultsContainer = document.getElementById(hiddenId + '_results');
-        const hiddenInput = document.getElementById(hiddenId);
+    
+    function attachSearchEvent(inputElement) {
+        inputElement.addEventListener('keyup', function() {
+            const query = this.value;
+            const index = this.getAttribute('data-index');
+            const type = this.getAttribute('data-type');
+            const hiddenId = `sap_id_range_${type}_${index}`;
+            const resultsContainer = document.getElementById(`sap_id_range_${type}_results_${index}`);
+            const hiddenInput = document.getElementById(hiddenId);
+            
+            clearTimeout(searchTimeout);
 
-        if (query.trim() === '') {
-            hiddenInput.value = '';
-            resultsContainer.style.display = 'none';
-            return;
-        }
+            if (query.trim() === '') {
+                hiddenInput.value = '';
+                resultsContainer.style.display = 'none';
+                return;
+            }
 
-        if (query.length < 2) {
-            resultsContainer.style.display = 'none';
-            return;
-        }
+            if (query.length < 2) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
 
-        searchTimeout = setTimeout(() => {
-            fetch('<?= get_base_url() ?>api/admin/search_student.php?q=' + encodeURIComponent(query))
-                .then(res => res.json())
-                .then(data => {
-                    resultsContainer.innerHTML = '';
-                    if (data.length > 0) {
-                        data.forEach(student => {
-                            const div = document.createElement('div');
-                            div.className = 'autocomplete-item';
-                            div.textContent = `${student.name} (${student.sap_id})`;
-                            div.onclick = function() {
-                                inputElement.value = `${student.name} (${student.sap_id})`;
-                                hiddenInput.value = student.sap_id;
-                                resultsContainer.style.display = 'none';
-                            };
-                            resultsContainer.appendChild(div);
-                        });
-                        resultsContainer.style.display = 'block';
-                    } else {
-                        resultsContainer.innerHTML = '<div style="padding: 8px 12px; font-size: 14px; color: #777;">No students found</div>';
-                        resultsContainer.style.display = 'block';
-                    }
-                })
-                .catch(err => console.error(err));
-        }, 300);
+            searchTimeout = setTimeout(() => {
+                fetch('<?= get_base_url() ?>api/admin/search_student.php?q=' + encodeURIComponent(query))
+                    .then(res => res.json())
+                    .then(data => {
+                        resultsContainer.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach(student => {
+                                const div = document.createElement('div');
+                                div.className = 'autocomplete-item';
+                                div.textContent = `${student.name} (${student.sap_id})`;
+                                div.onclick = function() {
+                                    inputElement.value = `${student.name} (${student.sap_id})`;
+                                    hiddenInput.value = student.sap_id;
+                                    resultsContainer.style.display = 'none';
+                                };
+                                resultsContainer.appendChild(div);
+                            });
+                            resultsContainer.style.display = 'block';
+                        } else {
+                            resultsContainer.innerHTML = '<div style="padding: 8px 12px; font-size: 14px; color: #777;">No students found</div>';
+                            resultsContainer.style.display = 'block';
+                        }
+                    })
+                    .catch(err => console.error(err));
+            }, 300);
+        });
     }
+
+    // Initialize search on existing rows
+    document.querySelectorAll('.sap-search').forEach(input => {
+        attachSearchEvent(input);
+    });
 
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.autocomplete-container')) {
-            document.getElementById('sap_id_range_start_results').style.display = 'none';
-            document.getElementById('sap_id_range_end_results').style.display = 'none';
+            document.querySelectorAll('.autocomplete-results').forEach(res => res.style.display = 'none');
         }
+    });
+
+    // Add Dynamic Rows
+    let rowIndex = 1;
+    const batchRowsContainer = document.getElementById('batch-rows-container');
+    const btnAddRow = document.getElementById('btn-add-row');
+
+    btnAddRow.addEventListener('click', function() {
+        const row = document.createElement('div');
+        row.className = 'batch-row';
+        row.style.cssText = 'display:flex; gap: 15px; align-items: flex-start; background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; position: relative;';
+        
+        row.innerHTML = `
+            <div style="flex: 1;">
+                <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">Batch Name</label>
+                <input type="text" name="batch_name[]" class="input-field" placeholder="e.g., B2" required style="margin-bottom:0;">
+            </div>
+            <div class="autocomplete-container" style="flex: 1.5;">
+                <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">Start SAP ID</label>
+                <input type="text" id="sap_id_range_start_display_${rowIndex}" class="input-field sap-search" data-index="${rowIndex}" data-type="start" placeholder="Search (Name/ID)" required style="width: 100%; box-sizing: border-box; margin-bottom:0;" autocomplete="off">
+                <input type="hidden" name="sap_id_range_start[]" id="sap_id_range_start_${rowIndex}">
+                <div id="sap_id_range_start_results_${rowIndex}" class="autocomplete-results" style="display: none;"></div>
+            </div>
+            <div class="autocomplete-container" style="flex: 1.5;">
+                <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display: block;">End SAP ID</label>
+                <input type="text" id="sap_id_range_end_display_${rowIndex}" class="input-field sap-search" data-index="${rowIndex}" data-type="end" placeholder="Search (Name/ID)" required style="width: 100%; box-sizing: border-box; margin-bottom:0;" autocomplete="off">
+                <input type="hidden" name="sap_id_range_end[]" id="sap_id_range_end_${rowIndex}">
+                <div id="sap_id_range_end_results_${rowIndex}" class="autocomplete-results" style="display: none;"></div>
+            </div>
+            <button type="button" class="btn-remove-row" style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-top: 24px;">🗑️</button>
+        `;
+        
+        batchRowsContainer.appendChild(row);
+
+        // Attach events to new inputs
+        attachSearchEvent(row.querySelector(`#sap_id_range_start_display_${rowIndex}`));
+        attachSearchEvent(row.querySelector(`#sap_id_range_end_display_${rowIndex}`));
+
+        // Attach remove row event
+        row.querySelector('.btn-remove-row').addEventListener('click', function() {
+            batchRowsContainer.removeChild(row);
+        });
+
+        rowIndex++;
     });
 </script>
 

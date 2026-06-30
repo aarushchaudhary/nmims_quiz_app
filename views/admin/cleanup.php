@@ -9,13 +9,22 @@
 ?>
 
 <div class="manage-container" style="max-width: 800px;">
-    <h2>Data Cleanup</h2>
+    <h2 style="margin-bottom: 5px;">Data Cleanup</h2>
     
-    <div id="cleanup-preview" style="text-align: center; padding: 20px;">
+    <div style="text-align: center; color: #555; margin-bottom: 20px;">
+        <p style="margin: 5px 0;">This tool permanently removes data from batches that graduated prior to last year. It will safely delete:</p>
+        <p style="margin: 5px 0;"><strong>Old Students</strong> &bull; <strong>Inactive Classes & Batches</strong> &bull; <strong>Expired Quizzes</strong> &bull; <strong>Past Quiz Attempts</strong></p>
+        <p style="margin: 5px 0; font-size: 0.9em; color: #777;"><em>Active data, faculty accounts, and global structures are never deleted.</em></p>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 0 0 20px 0;">
+
+    <div id="cleanup-preview" style="text-align: center; padding-bottom: 20px;">
         <p>Loading preview...</p>
     </div>
 
-    <div id="cleanup-actions" style="text-align: center; display: none; margin-top: 20px;">
+    <div id="cleanup-actions" style="text-align: center; display: none;">
+        <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 0 0 20px 0;">
         <p style="color: #dc3545; font-weight: bold; margin-bottom: 20px;">Warning: This action is irreversible. All listed data will be permanently deleted.</p>
         <button id="btn-confirm-delete" class="button-red" style="padding: 10px 30px; font-size: 1.1em;">Confirm Deletion</button>
         <a href="dashboard.php" class="button-secondary" style="padding: 10px 30px; font-size: 1.1em; text-decoration: none; margin-left: 10px;">Cancel</a>

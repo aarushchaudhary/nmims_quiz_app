@@ -9,23 +9,52 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = trim($_POST['batch_name'] ?? '');
-    $class_id = $_POST['class_id'] ?? '';
-    $sap_id_range_start = $_POST['sap_id_range_start'] ?? '';
-    $sap_id_range_end = $_POST['sap_id_range_end'] ?? '';
+    $class_id = trim($_POST['class_id'] ?? '');
+    
+    $batch_names = $_POST['batch_name'] ?? [];
+    $sap_id_starts = $_POST['sap_id_range_start'] ?? [];
+    $sap_id_ends = $_POST['sap_id_range_end'] ?? [];
 
-    if (empty($name) || empty($class_id) || empty($sap_id_range_start) || empty($sap_id_range_end)) {
-        header('Location: ' . get_base_url() . 'views/admin/batches.php?error=' . urlencode("All fields are required."));
+    if (empty($class_id)) {
+        header('Location: ' . get_base_url() . 'views/admin/batches.php?error=' . urlencode("Class (Section) is required."));
+        exit();
+    }
+
+    if (!is_array($batch_names) || count($batch_names) === 0) {
+        header('Location: ' . get_base_url() . 'views/admin/batches.php?error=' . urlencode("At least one batch must be provided."));
         exit();
     }
 
     try {
+        $pdo->beginTransaction();
+        
         $stmt = $pdo->prepare("INSERT INTO batches (name, class_id, sap_id_range_start, sap_id_range_end) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$name, $class_id, $sap_id_range_start, $sap_id_range_end]);
-        header('Location: ' . get_base_url() . 'views/admin/batches.php?success=' . urlencode("Batch added successfully."));
+        
+        $added_count = 0;
+        for ($i = 0; $i < count($batch_names); $i++) {
+            $name = trim($batch_names[$i]);
+            $start = trim($sap_id_starts[$i] ?? '');
+            $end = trim($sap_id_ends[$i] ?? '');
+
+            if (!empty($name) && !empty($start) && !empty($end)) {
+                $stmt->execute([$name, $class_id, $start, $end]);
+                $added_count++;
+            }
+        }
+        
+        $pdo->commit();
+        
+        if ($added_count > 0) {
+            header('Location: ' . get_base_url() . 'views/admin/batches.php?success=' . urlencode("$added_count batch(es) added successfully."));
+        } else {
+            header('Location: ' . get_base_url() . 'views/admin/batches.php?error=' . urlencode("No valid batches were submitted. Make sure all fields are filled."));
+        }
     } catch (\PDOException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         error_log($e->getMessage());
-        header('Location: ' . get_base_url() . 'views/admin/batches.php?error=' . urlencode("Error adding batch. Please try again."));
+        header('Location: ' . get_base_url() . 'views/admin/batches.php?error=' . urlencode("Error adding batches. Please try again."));
     }
 } else {
     header('Location: ' . get_base_url() . 'views/admin/batches.php');

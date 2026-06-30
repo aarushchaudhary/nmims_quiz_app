@@ -1,5 +1,5 @@
 <?php
-  $pageTitle = 'Manage Exam Groups';
+  $pageTitle = 'Create Student Groups';
   require_once '../../assets/templates/header.php';
   require_once '../../config/database.php';
 
@@ -12,10 +12,10 @@
 
 <div class="dashboard-center-content" style="width: 100%;">
     <div class="exam-groups-dashboard">
-        <a href="classes.php" class="button-red">Classes</a>
-        <a href="batches.php" class="button-red">Batches</a>
-        <a href="electives.php" class="button-red">Electives</a>
-        <a href="re_exam_groups.php" class="button-red">Re Exam Groups</a>
+        <a href="classes.php" class="button-red">Create Sections</a>
+        <a href="batches.php" class="button-red">Create Batches (B1, B2)</a>
+        <a href="electives.php" class="button-red">Create Electives & Add Students</a>
+        <a href="re_exam_groups.php" class="button-red">Create Re-Exam Groups</a>
     </div>
 </div>
 
