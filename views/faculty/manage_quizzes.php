@@ -52,7 +52,7 @@
   $total_pages = ceil($total_quizzes / $items_per_page);
 
   // --- Fetch Quizzes for the current page ---
-  $sql = "SELECT q.id, q.title, q.duration_minutes, q.start_time, q.end_time, q.show_results_immediately, c.name as course_name, es.name as status_name
+  $sql = "SELECT q.id, q.title, q.duration_minutes, q.start_time, q.end_time, q.show_results_immediately, q.descriptive_published, c.name as course_name, es.name as status_name
           FROM quizzes q
           JOIN courses c ON q.course_id = c.id
           JOIN exam_statuses es ON q.status_id = es.id
@@ -76,7 +76,12 @@
 
   // --- Check pending evaluations for ended quizzes ---
   $pending_evals = [];
+  $has_descriptive_q = [];
   foreach ($quizzes as $q) {
+      $desc_stmt = $pdo->prepare("SELECT COUNT(*) FROM questions WHERE quiz_id = ? AND question_type_id = 3");
+      $desc_stmt->execute([$q['id']]);
+      $has_descriptive_q[$q['id']] = $desc_stmt->fetchColumn() > 0;
+
       if ($q['status_name'] === 'Completed' || strtotime($q['end_time']) < time()) {
           $eval_stmt = $pdo->prepare("
               SELECT COUNT(*) FROM student_answers sa
@@ -372,17 +377,22 @@
                         </p>
                     </div>
                     <div class="quiz-card-actions-primary">
-                        <?php if ($quiz['status_name'] === 'Completed' || strtotime($quiz['end_time']) < time()): ?>
-                            <?php 
-                                $has_pending = isset($pending_evals[$quiz['id']]) && $pending_evals[$quiz['id']] > 0;
-                                $has_descriptive = !$quiz['show_results_immediately'];
-                                $is_published = $quiz['show_results_immediately'];
-                            ?>
+                        <?php 
+                            $is_ended = ($quiz['status_name'] === 'Completed' || strtotime($quiz['end_time']) < time());
+                            $has_pending = isset($pending_evals[$quiz['id']]) && $pending_evals[$quiz['id']] > 0;
+                            $has_desc = $has_descriptive_q[$quiz['id']];
+                            
+                            $is_published = $is_ended && $quiz['show_results_immediately'];
+                            if ($quiz['show_results_immediately'] && $has_desc) {
+                                $is_published = $is_ended && $quiz['descriptive_published'];
+                            }
+                        ?>
+                        <?php if ($is_ended): ?>
                             <?php if ($is_published): ?>
                                 <button class="btn-start-quiz btn-unpublish-results" data-quiz-id="<?php echo $quiz['id']; ?>" style="background-color: #dc3545; border-color: #c82333; color: #fff; cursor: pointer;" title="Unpublish results">
                                     Unpublish Results
                                 </button>
-                            <?php elseif ($has_descriptive && $has_pending): ?>
+                            <?php elseif ($has_desc && $has_pending): ?>
                                 <a href="evaluate_descriptive.php?quiz_id=<?php echo $quiz['id']; ?>" class="btn-start-quiz" style="background-color: #ffc107; border-color: #e0a800; color: #333; text-decoration: none; font-size: 0.85em;" title="Evaluate answers before publishing">
                                     Evaluate Answers to Publish Results
                                 </a>
@@ -397,7 +407,6 @@
                     </div>
                     <div class="quiz-card-actions">
                         <?php 
-                            $is_ended = ($quiz['status_name'] === 'Completed' || strtotime($quiz['end_time']) < time());
                             $disabled_style = $is_published ? 'opacity: 0.5; pointer-events: none; cursor: default; background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6;' : '';
                             $edit_disabled_style = ($is_ended || $is_published) ? 'opacity: 0.5; pointer-events: none; cursor: default; background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6;' : '';
                         ?>

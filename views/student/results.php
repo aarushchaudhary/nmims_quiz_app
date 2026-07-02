@@ -18,7 +18,8 @@
                  q.config_easy_count, 
                  q.config_medium_count, 
                  q.config_hard_count,
-                 q.show_results_immediately
+                 q.show_results_immediately,
+                 q.descriptive_published
           FROM student_attempts sa
           JOIN quizzes q ON sa.quiz_id = q.id
           WHERE sa.id = ? AND sa.student_id = ?";
@@ -97,6 +98,17 @@
     <div style="width: 100%; max-width: 350px; margin: 20px auto;">
         <canvas id="resultsChart"></canvas>
     </div>
+
+    <?php 
+        $stmt_desc = $pdo->prepare("SELECT COUNT(*) FROM student_answers sa JOIN questions q ON sa.question_id = q.id WHERE sa.attempt_id = ? AND q.question_type_id = 3");
+        $stmt_desc->execute([$attempt_id]);
+        $has_desc = $stmt_desc->fetchColumn() > 0;
+    ?>
+    <?php if ($has_desc && !$attempt['descriptive_published']): ?>
+    <div style="background-color: #e2f3f5; color: #0c5460; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0; border: 1px solid #b8daff;">
+        <strong>Note:</strong> Some questions (Descriptive) are pending evaluation. The results shown are only for MCQ and MSQ questions. The rest of the questions will be evaluated and the result will be released later.
+    </div>
+    <?php endif; ?>
 
     <div class="button-group" style="justify-content: center; margin-top: 20px; gap: 15px;">
         <a href="detailed_results.php?attempt_id=<?php echo htmlspecialchars($attempt_id); ?>" class="button-red" style="width: auto; background-color: #17a2b8;">View Detailed Breakdown</a>

@@ -171,7 +171,7 @@
       </label>
       <div style="display: flex; align-items: center; flex-wrap: wrap;">
         <label for="show_results_immediately" style="margin-bottom: 0; font-weight: 600; color: #444; font-size: 0.95em; letter-spacing: 0.5px;">SHOW RESULTS IMMEDIATELY?</label>
-        <span style="font-size: 0.85em; color: #888; margin-left: 10px; font-style: italic;">(Only MCQ and MSQ questions can be added if enabled)</span>
+        <span style="font-size: 0.85em; color: #888; margin-left: 10px; font-style: italic;">(Descriptive questions will be evaluated later)</span>
       </div>
     </div>
 

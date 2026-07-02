@@ -196,7 +196,7 @@
         
         <?php if ($quiz['show_results_immediately'] == 1): ?>
         <div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9em; border: 1px solid #ffeeba;">
-            <strong>Note:</strong> Since this quiz is set to show results instantly, you can only add MCQ and MSQ questions. You must also select the correct answer for each question.
+            <strong>Note:</strong> Since this quiz is set to show results instantly, any descriptive questions added will be evaluated later. You must select the correct answer for MCQ and MSQ questions.
         </div>
         <?php endif; ?>
 
@@ -209,7 +209,7 @@
             </div>
             
             <div class="form-row">
-                <div class="form-group"><label for="question_type_id">Question Type</label><select id="question_type_id" name="question_type_id" required><option value="" disabled selected>-- Select Type --</option><?php foreach($question_types as $type): ?><?php if ($quiz['show_results_immediately'] == 1 && $type['name'] === 'Descriptive') continue; ?><option value="<?php echo $type['id']; ?>"><?php echo htmlspecialchars($type['name']); ?></option><?php endforeach; ?></select></div>
+                <div class="form-group"><label for="question_type_id">Question Type</label><select id="question_type_id" name="question_type_id" required><option value="" disabled selected>-- Select Type --</option><?php foreach($question_types as $type): ?><option value="<?php echo $type['id']; ?>"><?php echo htmlspecialchars($type['name']); ?></option><?php endforeach; ?></select></div>
                 <div class="form-group"><label for="difficulty_id">Difficulty</label><select id="difficulty_id" name="difficulty_id" required><option value="" disabled selected>-- Select Difficulty --</option><?php foreach($difficulties as $diff): ?><option value="<?php echo $diff['id']; ?>"><?php echo htmlspecialchars($diff['level']); ?></option><?php endforeach; ?></select></div>
                 <div class="form-group"><label for="points">Points / Marks</label><input type="number" id="points" name="points" class="input-field" min="0" step="0.5" value="1.0" required></div>
             </div>

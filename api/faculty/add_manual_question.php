@@ -31,17 +31,7 @@ if (!$quiz_id || empty($question_text) || !$question_type_id || !$difficulty_id 
     exit();
 }
 
-// Fetch quiz settings to enforce instant results rules
-$quiz_stmt = $pdo->prepare("SELECT show_results_immediately FROM quizzes WHERE id = ?");
-$quiz_stmt->execute([$quiz_id]);
-$quiz = $quiz_stmt->fetch();
-
-if ($quiz && $quiz['show_results_immediately'] == 1) {
-    if ($question_type_id == 3) { // Descriptive
-        redirect('views/faculty/view_quiz.php?id=' . $quiz_id . '&error=Descriptive+questions+cannot+be+added+when+results+are+shown+instantly.');
-        exit();
-    }
-}
+// Removed the restriction that prevented adding descriptive questions when instant results are on.
 
 // Ensure correct answer is selected for MCQ (1) and MSQ (2)
 if ($question_type_id == 1 || $question_type_id == 2) {

@@ -36,8 +36,8 @@ try {
     $action = $input['action'] ?? 'publish';
     $show_results = ($action === 'unpublish') ? 0 : 1;
 
-    $stmt_update = $pdo->prepare("UPDATE quizzes SET show_results_immediately = ? WHERE id = ? AND faculty_id = ?");
-    $stmt_update->execute([$show_results, $quiz_id, $faculty_id]);
+    $stmt_update = $pdo->prepare("UPDATE quizzes SET show_results_immediately = ?, descriptive_published = ? WHERE id = ? AND faculty_id = ?");
+    $stmt_update->execute([$show_results, $show_results, $quiz_id, $faculty_id]);
 
     echo json_encode(['success' => true]);
 } catch (Exception $e) {

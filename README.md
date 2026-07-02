@@ -311,7 +311,8 @@ nmims_quiz_app/
 5. **Start the application**
    - Navigate to the project root:
      ```bash
-     cd nmims_quiz_appphp -S localhost:8080 router.php
+     cd nmims_quiz_app
+     php -S localhost:8080 router.php
      
      ```
    - Access the app: **http://localhost:8080**

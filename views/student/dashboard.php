@@ -78,7 +78,8 @@
   $quizzes = $stmt_quizzes->fetchAll();
   
   // --- NEW: Fetch Published Results ---
-      $sql_published = "SELECT q.id as quiz_id, q.title, sa.id as attempt_id, sa.total_score, sa.submitted_at 
+      $sql_published = "SELECT q.id as quiz_id, q.title, sa.id as attempt_id, sa.total_score, sa.submitted_at, q.descriptive_published,
+                        (SELECT COUNT(*) FROM student_answers ans JOIN questions qs ON ans.question_id = qs.id WHERE ans.attempt_id = sa.id AND qs.question_type_id = 3) as has_desc_count
                         FROM student_attempts sa
                         JOIN quizzes q ON sa.quiz_id = q.id
                         WHERE sa.student_id = :student_user_id 
@@ -154,7 +155,12 @@
             <?php else: ?>
                 <?php foreach ($published_results as $result): ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($result['title']); ?></td>
+                        <td>
+                            <?php echo htmlspecialchars($result['title']); ?>
+                            <?php if ($result['has_desc_count'] > 0 && !$result['descriptive_published']): ?>
+                                <br><span style="display: inline-block; margin-top: 4px; font-size: 0.8em; color: #856404; background-color: #fff3cd; padding: 2px 6px; border-radius: 4px; border: 1px solid #ffeeba;">Descriptive results pending</span>
+                            <?php endif; ?>
+                        </td>
                         <td><?php echo date('M j, Y, g:i A', strtotime($result['submitted_at'])); ?></td>
                         <td style="font-weight: bold; color: #28a745;"><?php echo htmlspecialchars(number_format($result['total_score'], 2)); ?></td>
                         <td class="action-buttons">
