@@ -362,11 +362,3 @@ INSERT INTO `roles` (`id`, `name`) VALUES
 (4, 'student'),
 (5, 'school head'),
 (6, 'director');
-
--- Populating the 'schools' table
-INSERT INTO `schools` (`id`, `name`) VALUES
-(1, 'STME'),
-(2, 'SPTM'),
-(3, 'SOL'),
-(4, 'SOC'),
-(5, 'SBM');

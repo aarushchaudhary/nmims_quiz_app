@@ -12,7 +12,7 @@
     <h2 style="margin-bottom: 5px;">Data Cleanup</h2>
     
     <div style="text-align: center; color: #555; margin-bottom: 20px;">
-        <p style="margin: 5px 0;">This tool permanently removes data from batches that graduated prior to last year. It will safely delete:</p>
+        <p style="margin: 5px 0;">This tool permanently removes data from batches that graduated 3 or more years ago. It will safely delete:</p>
         <p style="margin: 5px 0;"><strong>Old Students</strong> &bull; <strong>Inactive Classes & Batches</strong> &bull; <strong>Expired Quizzes</strong> &bull; <strong>Past Quiz Attempts</strong></p>
         <p style="margin: 5px 0; font-size: 0.9em; color: #777;"><em>Active data, faculty accounts, and global structures are never deleted.</em></p>
     </div>
@@ -26,7 +26,7 @@
     <div id="cleanup-actions" style="text-align: center; display: none;">
         <hr style="border: 0; border-top: 1px solid #e9ecef; margin: 0 0 20px 0;">
         <p style="color: #dc3545; font-weight: bold; margin-bottom: 20px;">Warning: This action is irreversible. All listed data will be permanently deleted.</p>
-        <button id="btn-confirm-delete" class="button-red" style="padding: 10px 30px; font-size: 1.1em;">Confirm Deletion</button>
+        <button id="btn-confirm-delete" class="button-red" style="padding: 10px 30px; font-size: 1.1em;">Delete 3+ Years Old Data</button>
         <a href="dashboard.php" class="button-secondary" style="padding: 10px 30px; font-size: 1.1em; text-decoration: none; margin-left: 10px;">Cancel</a>
     </div>
 </div>
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const total = counts.students + counts.classes + counts.batches + counts.quizzes + counts.attempts;
 
             if (total === 0) {
-                previewContainer.innerHTML = `<p>No old data found that meets the retention criteria (Graduation year < ${data.retentionYearThreshold}).</p>`;
+                previewContainer.innerHTML = `<p>No old data found that meets the retention criteria (Graduation year <= ${data.retentionYearThreshold}).</p>`;
             } else {
                 let html = `<p style="margin-bottom: 20px; font-size: 1.1em;">The following records are older than the retention period and will be deleted:</p>`;
                 html += `<div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">`;
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     confirmBtn.addEventListener('click', async function() {
-        if (!confirm('Are you absolutely sure you want to permanently delete all this old data?')) {
+        if (!confirm('Are you absolutely sure you want to permanently delete data from 3+ years ago?')) {
             return;
         }
         

@@ -16,7 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     $currentYear = (int)date('Y');
-    $retentionYear = $currentYear - 1;
+    $yearsToKeep = isset($_POST['years']) ? (int)$_POST['years'] : 3;
+    $retentionYear = $currentYear - $yearsToKeep;
 
     $pdo->beginTransaction();
 
@@ -24,7 +25,7 @@ try {
     $stmt = $pdo->prepare("CREATE TEMPORARY TABLE old_student_users (user_id INT PRIMARY KEY)");
     $stmt->execute();
     
-    $stmt = $pdo->prepare("INSERT INTO old_student_users (user_id) SELECT user_id FROM students WHERE graduation_year < ?");
+    $stmt = $pdo->prepare("INSERT INTO old_student_users (user_id) SELECT user_id FROM students WHERE graduation_year <= ?");
     $stmt->execute([$retentionYear]);
 
     // 2. Identify old quizzes
@@ -40,8 +41,8 @@ try {
         LEFT JOIN quiz_batches qb ON q.id = qb.quiz_id
         LEFT JOIN batches b ON qb.batch_id = b.id
         LEFT JOIN classes c2 ON b.class_id = c2.id
-        WHERE (qc.class_id IS NOT NULL AND c.graduation_year < ?)
-           OR (qb.batch_id IS NOT NULL AND c2.graduation_year < ?)
+        WHERE (qc.class_id IS NOT NULL AND c.graduation_year <= ?)
+           OR (qb.batch_id IS NOT NULL AND c2.graduation_year <= ?)
     ");
     $stmt->execute([$retentionYear, $retentionYear]);
 
@@ -71,7 +72,7 @@ try {
     $pdo->exec("DELETE FROM users WHERE id IN (SELECT user_id FROM old_student_users)");
 
     // 10. Delete old classes (cascades batches)
-    $stmt = $pdo->prepare("DELETE FROM classes WHERE graduation_year < ?");
+    $stmt = $pdo->prepare("DELETE FROM classes WHERE graduation_year <= ?");
     $stmt->execute([$retentionYear]);
 
     // Drop temp tables

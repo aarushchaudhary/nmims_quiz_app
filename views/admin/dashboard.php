@@ -31,7 +31,7 @@
 
         <div style="margin-bottom: 20px;">
             <h4 style="color: #e60000; margin-bottom: 6px;">Step 3: Create Exam Groups</h4>
-            <p style="color: #555; margin: 0; line-height: 1.6;">Click <strong>Exam Groups</strong> to create <strong>Classes</strong>, <strong>Batches</strong>, <strong>Electives</strong>, or <strong>Re-Exam Groups</strong>. These define which students appear in a quiz by SAP ID range. Faculty will use these groups when creating quizzes.</p>
+            <p style="color: #555; margin: 0; line-height: 1.6;">Click <strong>Create Student Groups</strong> to create <strong>Batches</strong>, <strong>Sections</strong>, <strong>Electives</strong>, or <strong>Re-Exam Groups</strong>. These define which students appear in a quiz by SAP ID range. Faculty will use these groups when creating quizzes.</p>
         </div>
 
         <div style="margin-bottom: 20px;">
@@ -65,7 +65,7 @@
             </tr>
             <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 10px 8px; font-weight: bold; color: #e60000;">Create Student Groups</td>
-                <td style="padding: 10px 8px; color: #555;">Manage Sections, Batches, Electives, and Re-Exam Groups. These define which students get assigned to quizzes by SAP ID ranges.</td>
+                <td style="padding: 10px 8px; color: #555;">Manage Batches, Sections, Electives, and Re-Exam Groups. These define which students get assigned to quizzes by SAP ID ranges.</td>
             </tr>
             <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 10px 8px; font-weight: bold; color: #6f42c1;">Manage Roles</td>
@@ -73,7 +73,7 @@
             </tr>
             <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 10px 8px; font-weight: bold; color: #dc3545;">Data Cleanup</td>
-                <td style="padding: 10px 8px; color: #555;">Remove old or orphaned data from the database such as expired re-exam groups, unused quiz data, or stale records.</td>
+                <td style="padding: 10px 8px; color: #555;">Remove data older than 3 years (e.g. old graduated students, inactive batches, expired quizzes).</td>
             </tr>
             <tr>
                 <td style="padding: 10px 8px; font-weight: bold; color: #fd7e14;">Demote Students</td>

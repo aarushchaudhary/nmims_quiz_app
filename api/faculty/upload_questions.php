@@ -48,8 +48,8 @@ try {
     for ($row = 2; $row <= $highestRow; $row++) {
         // **MODIFIED:** Reading new column order
         $question_text = trim($sheet->getCell('A' . $row)->getValue() ?? '');
-        $type_name = trim($sheet->getCell('B' . $row)->getValue() ?? '');
-        $difficulty_level = trim($sheet->getCell('C' . $row)->getValue() ?? '');
+        $type_id = trim($sheet->getCell('B' . $row)->getValue() ?? '');
+        $difficulty_id = trim($sheet->getCell('C' . $row)->getValue() ?? '');
         $points = trim($sheet->getCell('D' . $row)->getValue() ?? ''); // NEW
         $option1 = trim($sheet->getCell('E' . $row)->getValue() ?? '');
         $option2 = trim($sheet->getCell('F' . $row)->getValue() ?? '');
@@ -60,11 +60,8 @@ try {
         if (empty($question_text)) continue;
 
         // --- Data Validation & Lookup ---
-        $type_id = array_search($type_name, $question_types);
-        $difficulty_id = array_search($difficulty_level, $question_difficulties);
-
-        if ($type_id === false || $difficulty_id === false) {
-            throw new Exception("Invalid type or difficulty ('{$type_name}'/'{$difficulty_level}') on row {$row}.");
+        if (!array_key_exists($type_id, $question_types) || !array_key_exists($difficulty_id, $question_difficulties)) {
+            throw new Exception("Invalid type ID '{$type_id}' or difficulty ID '{$difficulty_id}' on row {$row}. Must be 1, 2, or 3.");
         }
         if (!is_numeric($points) || $points < 0) {
             $points = 1.0; // Default to 1 point if points value is invalid or not specified
@@ -95,8 +92,10 @@ try {
     $pdo->commit();
     redirect('views/faculty/view_quiz.php?id=' . $quiz_id . '&success=Questions+uploaded+successfully.');
 
-} catch (Exception $e) {
-    $pdo->rollBack();
+} catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log("Question upload failed: " . $e->getMessage());
     redirect('views/faculty/view_quiz.php?id=' . $quiz_id . '&error=' . urlencode($e->getMessage()));
 }

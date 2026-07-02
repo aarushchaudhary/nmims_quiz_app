@@ -358,7 +358,7 @@
                     <div class="quiz-card-body">
                         <p><strong>School:</strong> <?php echo htmlspecialchars($school); ?></p>
                         <p><strong>Course:</strong> <?php echo htmlspecialchars($course); ?></p>
-                        <p><strong>Sections:</strong> <?php echo htmlspecialchars($sections_str); ?></p>
+                        <p><strong>Assigned Groups:</strong> <?php echo htmlspecialchars($sections_str); ?></p>
                         <?php if ($electives_str !== 'N/A'): ?>
                         <p><strong>Electives:</strong> <?php echo htmlspecialchars($electives_str); ?></p>
                         <?php endif; ?>

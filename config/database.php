@@ -13,19 +13,20 @@ error_reporting(E_ALL);
 ini_set("display_errors", 0); // Don't display errors in output
 ini_set("log_errors", 1); // Log errors to error log
 
-// Set up error handler to output JSON for API endpoints
+// Set up error handler to log errors but not crash on warnings/notices
 set_error_handler(function ($errno, $errstr, $errfile, $errline) {
-    error_log("PHP Error [$errno]: $errstr in $errfile on line $errline");
-    if (php_sapi_name() !== "cli") {
-        // Only affect web requests, not CLI
-        header("Content-Type: application/json", true);
-        http_response_code(500);
-        echo json_encode([
-            "error" => "An internal server error occurred. Please try again.",
-        ]);
-        exit();
+    // Check if error is fatal-ish (user error)
+    if ($errno === E_USER_ERROR) {
+        error_log("PHP Fatal Error [$errno]: $errstr in $errfile on line $errline");
+        if (php_sapi_name() !== "cli") {
+            header("Content-Type: application/json", true);
+            http_response_code(500);
+            echo json_encode(["error" => "An internal server error occurred. Please try again."]);
+            exit();
+        }
     }
-    return false; // Let PHP's internal error handler also run
+    // Return false to let the standard PHP error handler log it
+    return false;
 });
 
 // Set up exception handler to output JSON

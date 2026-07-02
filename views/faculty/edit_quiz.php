@@ -322,8 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const courseIds = $(this).val();
         
         // Remove existing dynamic classes and batches
-        examGroupsSelect.find('optgroup[label="Classes"]').remove();
         examGroupsSelect.find('optgroup[label="Batches"]').remove();
+        examGroupsSelect.find('optgroup[label="Sections"]').remove();
 
         if (!courseIds || courseIds.length === 0) {
             examGroupsSelect.trigger('change');
@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const mergedSelections = Array.from(new Set([...currentSelections, ...allCurrentSelections]));
 
         if (data.classes && data.classes.length > 0) {
-            let classGroup = $('<optgroup label="Classes"></optgroup>');
+            let classGroup = $('<optgroup label="Batches"></optgroup>');
             data.classes.forEach(cls => {
                 let opt = new Option(cls.name, 'class_' + cls.id);
                 if (mergedSelections.includes('class_' + cls.id)) {
@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (data.batches && data.batches.length > 0) {
-            let batchGroup = $('<optgroup label="Batches"></optgroup>');
+            let batchGroup = $('<optgroup label="Sections"></optgroup>');
             data.batches.forEach(bat => {
                 let opt = new Option(bat.name, 'batch_' + bat.id);
                 $(opt).attr('data-class-id', bat.class_id);
@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 batchGroup.append(opt);
             });
-            examGroupsSelect.find('optgroup[label="Classes"]').after(batchGroup);
+            examGroupsSelect.find('optgroup[label="Batches"]').after(batchGroup);
         }
 
         examGroupsSelect.trigger('change');
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .filter(val => val.startsWith('class_'))
             .map(val => val.replace('class_', ''));
 
-        $(this).find('optgroup[label="Batches"] option').each(function() {
+        $(this).find('optgroup[label="Sections"] option').each(function() {
             const batchClassId = $(this).attr('data-class-id');
             if (selectedClassIds.includes(batchClassId)) {
                 $(this).prop('disabled', true);

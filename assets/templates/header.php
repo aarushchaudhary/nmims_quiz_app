@@ -7,12 +7,12 @@ require_once __DIR__ . '/../../config/base_url.php';
 
 // --- Global Password Change Enforcement ---
 $currentScript = $_SERVER['SCRIPT_FILENAME'] ?? '';
-$isChangePasswordPage = strpos(str_replace('\\', '/', $currentScript), '/views/student/change_password.php') !== false;
+$isChangePasswordPage = strpos(str_replace('\\', '/', $currentScript), '/views/shared/change_password.php') !== false;
 $isLogoutPage = strpos(str_replace('\\', '/', $currentScript), '/logout.php') !== false;
 $isApi = strpos(str_replace('\\', '/', $currentScript), '/api/') !== false;
 
 if (!empty($_SESSION['force_password_change']) && !$isChangePasswordPage && !$isLogoutPage && !$isApi) {
-    header('Location: ' . get_base_url() . 'views/student/change_password.php');
+    header('Location: ' . get_base_url() . 'views/shared/change_password.php');
     exit();
 }
 ?>
@@ -37,7 +37,7 @@ if (!empty($_SESSION['force_password_change']) && !$isChangePasswordPage && !$is
 </head>
 <body>
     <header class="ribbon">
-        <img src="<?= get_asset_url('assets/images/logostme.png') ?>" alt="Logo" class="logo" />
+        <img src="<?= get_asset_url('assets/images/nmims.png') ?>" alt="Logo" class="logo" />
         <h1 class="site-title"><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) : 'NMIMS Quiz App'; ?></h1>
         
         <div class="header-buttons">
@@ -65,6 +65,7 @@ if (!empty($_SESSION['force_password_change']) && !$isChangePasswordPage && !$is
                 <?php endif; ?>
                 
                 <a href="<?= get_base_url() ?>index.php" class="home-button">Home</a>
+                <a href="<?= get_base_url() ?>views/shared/change_password.php" class="home-button" style="background-color: #17a2b8;">Change Password</a>
                 <a href="<?= get_base_url() ?>logout.php" class="logout-button">Logout</a>
             <?php endif; ?>
         </div>

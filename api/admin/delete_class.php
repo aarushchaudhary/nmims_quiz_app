@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
     try {
-        $stmt = $pdo->prepare("DELETE FROM classes WHERE id = ?");
+        $stmt = $pdo->prepare("DELETE FROM batches WHERE id = ?");
         $stmt->execute([$id]);
         header('Location: ' . get_base_url() . 'views/admin/classes.php?success=' . urlencode("Class deleted successfully."));
     } catch (\PDOException $e) {

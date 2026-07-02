@@ -8,29 +8,24 @@
       exit();
   }
 
-  $class_id = $_GET['id'] ?? null;
-  if (!$class_id) {
+  $section_id = $_GET['id'] ?? null;
+  if (!$section_id) {
       header('Location: classes.php');
       exit();
   }
 
-  // Fetch class details
-  $stmt = $pdo->prepare("SELECT * FROM classes WHERE id = ?");
-  $stmt->execute([$class_id]);
+  // Fetch batch details
+  $stmt = $pdo->prepare("SELECT * FROM batches WHERE id = ?");
+  $stmt->execute([$section_id]);
   $class = $stmt->fetch();
 
   if (!$class) {
-      header('Location: classes.php?error=' . urlencode("Class not found."));
+      header('Location: classes.php?error=' . urlencode("Section not found."));
       exit();
   }
 
-  // Fetch schools and courses
-  $schools = $pdo->query("SELECT * FROM schools ORDER BY name ASC")->fetchAll();
-  $courses = $pdo->query("SELECT * FROM courses ORDER BY name ASC")->fetchAll();
-  $coursesBySchool = [];
-  foreach ($courses as $course) {
-      $coursesBySchool[$course['school_id']][] = $course;
-  }
+  // Fetch all classes for the dropdown
+  $classes = $pdo->query("SELECT * FROM classes ORDER BY name ASC")->fetchAll();
 
   // Fetch student names for autocomplete display
   $start_student_name = "";
@@ -87,29 +82,22 @@
 <div class="manage-container">
 
     <div class="section-box">
-        <h3>Edit Class</h3>
+        <h3>Edit Section</h3>
         <form action="<?= get_base_url() ?>api/admin/edit_class.php" method="POST" style="display:flex; flex-direction:column; gap: 15px;">
-            <input type="hidden" name="class_id" value="<?php echo $class['id']; ?>">
-            
-            <input type="text" name="class_name" class="input-field" placeholder="Enter class name (e.g., MCA 2026 Batch A)" required value="<?php echo htmlspecialchars($class['name']); ?>">
+            <input type="hidden" name="section_id" value="<?php echo $class['id']; ?>">
             
             <div style="display:flex; gap: 15px;">
-                <select name="school_id" id="school_id" class="input-field" required onchange="updateCourses()">
-                    <option value="">Select School</option>
-                    <?php foreach ($schools as $school): ?>
-                        <option value="<?php echo $school['id']; ?>" <?php if ($class['school_id'] == $school['id']) echo 'selected'; ?>><?php echo htmlspecialchars($school['name']); ?></option>
+                <input type="text" name="class_name" class="input-field" placeholder="Enter section name (e.g., Section A, C1)" required value="<?php echo htmlspecialchars($class['name']); ?>" style="flex: 1;">
+                
+                <select name="parent_batch_id" id="parent_batch_id" class="input-field" required style="flex: 1;">
+                    <option value="">Select Batch</option>
+                    <?php foreach ($classes as $cls): ?>
+                        <option value="<?php echo $cls['id']; ?>" <?php if ($class['class_id'] == $cls['id']) echo 'selected'; ?>><?php echo htmlspecialchars($cls['name']); ?></option>
                     <?php endforeach; ?>
-                </select>
-
-                <select name="course_id" id="course_id" class="input-field" required>
-                    <option value="">Select Course</option>
-                    <!-- Populated via JS -->
                 </select>
             </div>
 
             <div style="display:flex; gap: 15px;">
-                <input type="number" name="graduation_year" class="input-field" placeholder="Graduation Year (e.g., 2026)" required min="2000" max="2100" style="flex: 1;" value="<?php echo htmlspecialchars($class['graduation_year']); ?>">
-                
                 <div class="autocomplete-container" style="flex: 1;">
                     <input type="text" id="sap_id_range_start_display" class="input-field" placeholder="Search Start SAP ID (Name/ID)" required style="width: 100%; box-sizing: border-box;" autocomplete="off" onkeyup="searchStudent(this, 'sap_id_range_start')" value="<?php echo htmlspecialchars($start_student_name); ?>">
                     <input type="hidden" name="sap_id_range_start" id="sap_id_range_start" value="<?php echo htmlspecialchars($class['sap_id_range_start']); ?>">
@@ -123,39 +111,12 @@
                 </div>
             </div>
 
-            <button type="submit" class="button-red" style="width:auto; align-self: flex-start;">Update Class</button>
+            <button type="submit" class="button-red" style="width:auto; align-self: flex-start;">Update Section</button>
         </form>
     </div>
 </div>
 
 <script>
-    const coursesBySchool = <?php echo json_encode($coursesBySchool); ?>;
-    const initialCourseId = <?php echo json_encode($class['course_id']); ?>;
-    
-    function updateCourses(selectedCourseId = null) {
-        const schoolId = document.getElementById('school_id').value;
-        const courseSelect = document.getElementById('course_id');
-        
-        courseSelect.innerHTML = '<option value="">Select Course</option>';
-        
-        if (schoolId && coursesBySchool[schoolId]) {
-            coursesBySchool[schoolId].forEach(course => {
-                const option = document.createElement('option');
-                option.value = course.id;
-                option.textContent = course.name;
-                if (selectedCourseId && course.id == selectedCourseId) {
-                    option.selected = true;
-                }
-                courseSelect.appendChild(option);
-            });
-        }
-    }
-
-    // Initialize courses based on selected school
-    document.addEventListener('DOMContentLoaded', function() {
-        updateCourses(initialCourseId);
-    });
-
     let searchTimeout;
     function searchStudent(inputElement, hiddenId) {
         clearTimeout(searchTimeout);

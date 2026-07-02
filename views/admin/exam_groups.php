@@ -12,8 +12,8 @@
 
 <div class="dashboard-center-content" style="width: 100%;">
     <div class="exam-groups-dashboard">
+        <a href="batches.php" class="button-red">Create Batches</a>
         <a href="classes.php" class="button-red">Create Sections</a>
-        <a href="batches.php" class="button-red">Create Batches (B1, B2)</a>
         <a href="electives.php" class="button-red">Create Electives & Add Students</a>
         <a href="re_exam_groups.php" class="button-red">Create Re-Exam Groups</a>
     </div>
