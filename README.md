@@ -1,10 +1,13 @@
 # NMIMS Quiz App 📚
 
-A comprehensive, role-based quiz management system built with PHP and MySQL, designed for educational institutions. Features real-time exam monitoring, automated grading, secure authentication, and support for multiple question types.
+A comprehensive, role-based online examination system built with PHP and MySQL for NMIMS Hyderabad. Supports real-time exam monitoring, automated grading, secure proctoring, multiple question types, and a companion Electron-based lockdown browser.
 
 ![License](https://img.shields.io/badge/license-GPL%203.0-blue.svg)
-![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)
-![MariaDB](https://img.shields.io/badge/MariaDB-10.3%2B-orange.svg)
+![PHP](https://img.shields.io/badge/PHP-8.5-purple.svg)
+![MariaDB](https://img.shields.io/badge/MariaDB%20%2F%20MySQL-10.3%2B-orange.svg)
+![Tests](https://img.shields.io/badge/tests-53%20passing-brightgreen.svg)
+
+---
 
 ## 📋 Table of Contents
 - [Features](#-features)
@@ -12,596 +15,554 @@ A comprehensive, role-based quiz management system built with PHP and MySQL, des
 - [Technology Stack](#-technology-stack)
 - [Project Structure](#-project-structure)
 - [Installation](#-installation)
+- [Configuration](#-configuration)
 - [Usage](#-usage)
-- [Database Schema](#-database-schema)
 - [API Reference](#-api-reference)
+- [Testing](#-testing)
+- [Secure Browser](#-secure-lockdown-browser)
+- [Database Schema](#-database-schema)
 - [Security](#-security)
 - [License](#-license)
 
+---
+
 ## 🌟 Features
 
-### For Students
-- **Real-time Quiz Participation**: Join quiz lobbies and take exams with live status updates
-- **Multiple Question Types**: Support for MCQ (single/multiple choice) and descriptive questions
-- **Auto-Save Functionality**: Answers are automatically saved as you progress through the exam
-- **Progress Tracking**: Real-time display of current question and total question count
-- **Instant Results**: View results immediately after quiz completion with detailed breakdowns
-- **Responsive UI**: Optimized exam interface that works on different screen sizes
-- **Quiz Timer**: Real-time countdown timer for time-bound exams
+### 🎓 Students
+- Join quiz lobbies and take live exams with a real-time countdown timer
+- Support for **MCQ (single answer)**, **MSQ (multiple answer)**, and **Descriptive** questions
+- Auto-save answers as you progress; resume if accidentally disconnected
+- Behavior proctoring: tab-switch detection, fullscreen enforcement, copy-paste blocking
+- View instant results with per-question breakdowns after submission
+- Export personal results as an Excel file
 
-### For Faculty
-- **Quiz Creation & Management**: Create, edit, and publish quizzes with ease
-- **Question Management**: Add, edit, and delete questions individually or in bulk
-- **Bulk Upload**: Import questions via Excel spreadsheets using provided templates
-- **Real-time Monitoring**: Track student progress during live exams with live dashboard
-- **Automated Grading**: Instant automatic grading for objective questions
-- **Manual Evaluation**: Interface for grading descriptive answers with feedback
-- **Comprehensive Reports**: Export results and generate detailed analytics
-- **Item Analysis**: Statistical analysis of question difficulty and student performance
-- **Exam Control**: Start, pause, or stop exams in real-time
-- **Quiz Status Management**: Enable/disable quizzes and control student access
+### 👨‍🏫 Faculty
+- Create quizzes with fine-grained config: time limits, question counts by difficulty, shuffle, instant results toggle
+- Add questions manually or **bulk-upload via Excel template**
+- Edit, delete, and re-order questions and options
+- Real-time **live monitoring dashboard** with per-student progress and paginated view
+- **Quiz lobby** management — see who's ready before starting
+- Start, pause, complete, or re-enable exams with one click
+- Manually evaluate descriptive answers and override scores
+- **Item analysis** — per-question difficulty and discrimination statistics
+- Export results to `.xlsx`; publish/unpublish results for students
 
-### For Placement Committee
-- **Specialized Assessments**: Create placement-specific tests and aptitude exams
-- **Candidate Management**: Track and evaluate placement candidates
-- **Company-wise Reports**: Generate reports for different recruiting companies
-- **Result Aggregation**: Consolidated view of all placement assessment results
+### 🏢 Admin
+- Full **user management**: add, edit, delete students and faculty; bulk-import via Excel
+- Manage academic hierarchy: **Schools → Courses → Classes (Batches) → Sections**
+- Create and manage **Re-exam groups** and **Electives**
+- Demote students between academic years
+- Reset user passwords
+- System-wide dashboard: live counts of students, faculty, and quizzes
+- **Database cleanup** utility — preview and execute orphan-record cleanup
 
-### For Administrators
-- **User Management**: Add, edit, and manage student and faculty accounts
-- **Bulk User Upload**: Import users via Excel templates for faster onboarding
-- **Role Management**: Manage user roles and permissions
-- **School & Course Management**: Organize users by schools and courses
-- **System Overview**: Monitor all active quizzes and system-wide usage
-- **Event Logs**: Track all system events and user activities
-- **Password Reset**: Reset student/faculty passwords
-- **Dashboard Statistics**: Real-time system statistics and metrics
+### 🤝 Placement Committee (Placecom)
+- Access aggregated quiz results across all exams
+- Generate placement-specific reports for recruiting companies
+- Track candidate performance across assessments
+
+### 👤 Head (Department Head)
+- Dedicated dashboard view for department-level oversight
+
+---
 
 ## 🏗️ System Architecture
 
 ```mermaid
 flowchart TD
-    %% Client Layer
-    subgraph "Client Browser" 
+    subgraph "Client"
         direction TB
-        CB_CSS["assets/css"]:::frontend
-        CB_JS["assets/js"]:::frontend
-        CB_IMG["assets/images"]:::frontend
-        CB_CHART["lib/chartjs/chart.umd.js"]:::external
+        FE_HTML["Views (HTML/PHP)"]:::frontend
+        FE_JS["assets/js/script.js"]:::frontend
+        FE_CSS["assets/css/main.css"]:::frontend
+        FE_CHART["lib/chartjs/chart.umd.js"]:::external
     end
 
-    %% Server Layer
-    subgraph "Web Server & PHP Runtime"
+    subgraph "PHP Server  (php -S ... router.php)"
         direction TB
-        WS_INDEX["index.php"]:::backend
-        WS_LOGIN["login.php"]:::backend
-        WS_LOGOUT["logout.php"]:::backend
-        WS_CONFIG["config/*.php"]:::backend
-        WS_VENDOR["lib/vendor"]:::backend
-        WS_COMPOSER_JSON["lib/composer.json"]:::backend
-        WS_COMPOSER_LOCK["lib/composer.lock"]:::backend
+        ROUTER["router.php"]:::backend
+        INDEX["index.php"]:::backend
+        CONFIG["config/database.php\nconfig/base_url.php"]:::backend
     end
 
-    %% API Layer
     subgraph "API Layer"
         direction TB
         API_AUTH["api/auth.php"]:::backend
-        API_ADMIN["api/admin/*.php"]:::backend
-        API_FACULTY["api/faculty/*.php"]:::backend
-        API_PLACECOM["api/placecom/*.php"]:::backend
-        API_SHARED["api/shared/*.php"]:::backend
-        API_STUDENT["api/student/*.php"]:::backend
+        API_ADMIN["api/admin/* (32 endpoints)"]:::backend
+        API_FACULTY["api/faculty/* (16 endpoints)"]:::backend
+        API_STUDENT["api/student/* (7 endpoints)"]:::backend
+        API_SHARED["api/shared/* (7 endpoints)"]:::backend
+        API_PLACECOM["api/placecom/* (1 endpoint)"]:::backend
     end
 
-    %% Database
-    DB["MySQL\n(schema.sql)"]:::database
-
-    %% External Services
-    subgraph "External Libraries & Services"
-        direction TB
-        EXT_PS["PHPSpreadsheet\n(lib/vendor)"]:::external
-        EXT_SMTP["SMTP Service"]:::external
+    subgraph "External"
+        PS["PHPSpreadsheet\n(lib/vendor)"]:::external
+        ELECTRON["Electron Lockdown Browser\n(secure-browser/)"]:::external
     end
 
-    %% Connections
-    CB_CSS -->|HTTP Requests| WS_INDEX
-    CB_JS -->|HTTP Requests| WS_INDEX
-    CB_IMG -->|HTTP Requests| WS_INDEX
-    CB_CHART -->|Loads Chart.js| CB_JS
+    DB[("MySQL / MariaDB\nnmims_quiz_app")]:::database
 
-    CB_JS -->|AJAX JSON| API_AUTH
-    CB_JS -->|AJAX JSON| API_ADMIN
-    CB_JS -->|AJAX JSON| API_FACULTY
-    CB_JS -->|AJAX JSON| API_PLACECOM
-    CB_JS -->|AJAX JSON| API_SHARED
-    CB_JS -->|AJAX JSON| API_STUDENT
+    FE_HTML -->|HTTP| ROUTER
+    ROUTER -->|route| INDEX
+    FE_JS -->|AJAX / fetch| API_AUTH
+    FE_JS -->|AJAX / fetch| API_ADMIN
+    FE_JS -->|AJAX / fetch| API_FACULTY
+    FE_JS -->|AJAX / fetch| API_STUDENT
+    FE_JS -->|AJAX / fetch| API_SHARED
+    FE_JS -->|AJAX / fetch| API_PLACECOM
 
-    API_AUTH -->|SQL Query| DB
-    API_ADMIN -->|SQL Query| DB
-    API_FACULTY -->|SQL Query| DB
-    API_PLACECOM -->|SQL Query| DB
-    API_SHARED -->|SQL Query| DB
-    API_STUDENT -->|SQL Query| DB
+    API_AUTH & API_ADMIN & API_FACULTY & API_STUDENT & API_SHARED & API_PLACECOM -->|PDO| DB
+    API_ADMIN & API_FACULTY & API_STUDENT -->|import/export| PS
+    ELECTRON -->|loads| FE_HTML
 
-    API_ADMIN -->|Excel Import/Export| EXT_PS
-    API_FACULTY -->|Excel Export| EXT_PS
-
-    API_SHARED -->|Email Notifications| EXT_SMTP
-    API_STUDENT -->|Event Logs| API_SHARED
-
-    %% Styles
     classDef frontend fill:#bbdefb,stroke:#0d47a1,color:#0d47a1;
-    classDef backend fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20;
+    classDef backend  fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20;
     classDef database fill:#ffe0b2,stroke:#e65100,color:#e65100;
     classDef external fill:#e1bee7,stroke:#4a148c,color:#4a148c;
 ```
 
-### Architecture Overview
-- **Frontend Layer**: HTML5, CSS3, and JavaScript (ES6+) with responsive design
-- **Server Layer**: PHP runtime handling HTTP requests and serving content
-- **API Layer**: RESTful API endpoints organized by role (admin, faculty, student, placecom, shared)
-- **Database Layer**: MySQL database with normalized schema for data persistence
-- **External Services**: Excel import/export (PHPSpreadsheet) and email notifications (SMTP)
+---
 
 ## 🛠️ Technology Stack
 
-### Frontend
-- **HTML5** - Semantic markup and form elements
-- **CSS3** - Flexbox, Grid, responsive design with ITCSS architecture
-- **JavaScript (ES6+)** - Vanilla JS with fetch API for AJAX calls
-- **Chart.js** - Data visualization and analytics charts
+| Layer | Technology |
+|---|---|
+| **Language** | PHP 8.5 |
+| **Database** | MySQL / MariaDB (PDO, prepared statements) |
+| **Frontend** | HTML5, CSS3 (ITCSS), Vanilla JS (ES6+), Chart.js |
+| **Excel I/O** | PHPSpreadsheet (via Composer, in `lib/`) |
+| **Lockdown Browser** | Electron 28 (`secure-browser/`) |
+| **Session Auth** | PHP native sessions + RBAC |
+| **Server** | PHP built-in server via `router.php` |
 
-### Backend
-- **PHP 7.4+** - Server-side logic and business operations
-- **PDO (PHP Data Objects)** - Database abstraction and prepared statements
-- **PHPSpreadsheet** - Excel file import/export functionality
-- **Session Management** - Server-side session handling for authentication
-
-### Database
-- **MySQL 5.7+** or **MariaDB** - Relational database for data persistence
-- **Prepared Statements** - Protection against SQL injection attacks
-
-### Security Features
-- Session-based authentication with role-based access control (RBAC)
-- Prepared SQL statements to prevent injection attacks
-- Input validation and sanitization on all user inputs
-- Password hashing for secure credential storage
-- CORS and CSRF protection mechanisms
+---
 
 ## 📁 Project Structure
 
 ```
 nmims_quiz_app/
-├── api/                              # Backend API endpoints
-│   ├── auth.php                      # Authentication & login handler
-│   ├── admin/                        # Admin-specific endpoints
-│   │   ├── add_user.php
-│   │   ├── add_course.php
-│   │   ├── add_school.php
-│   │   ├── add_role.php
-│   │   ├── delete_*.php              # Delete operations
-│   │   ├── get_*.php                 # Get/Fetch operations
-│   │   ├── reset_password.php
-│   │   ├── update_*.php              # Update operations
-│   │   └── upload_students.php
-│   ├── faculty/                      # Faculty-specific endpoints
-│   │   ├── create_quiz.php
-│   │   ├── edit_quiz.php
-│   │   ├── delete_quiz.php
-│   │   ├── upload_questions.php
-│   │   ├── get_quiz_results.php
-│   │   ├── export_results.php
-│   │   ├── get_item_analysis.php
-│   │   ├── get_live_monitoring_data.php
-│   │   └── update_quiz_status.php
-│   ├── placecom/                     # Placement committee endpoints
-│   │   └── get_all_quiz_results.php
-│   ├── shared/                       # Shared endpoints (all roles)
-│   │   ├── get_quiz_status.php
-│   │   ├── get_courses_by_school.php
-│   │   ├── get_batches_by_course.php
-│   │   ├── get_years_by_course.php
-│   │   └── export_all_results.php
-│   └── student/                      # Student-specific endpoints
-│       ├── fetch_exam_questions.php  # Load quiz questions
-│       ├── save_answer.php           # Save individual answer
-│       ├── finish_exam.php           # Submit exam
-│       ├── get_detailed_results.php
-│       ├── export_student_results.php
-│       ├── log_event.php             # Activity logging
-│       └── get_attempt_status.php
-├── assets/                           # Static files
-│   ├── css/
-│   │   └── main.css                  # Consolidated stylesheet (ITCSS architecture)
-│   ├── images/                       # Images and icons
-│   ├── js/
-│   │   └── script.js                 # Merged JS (login + exam logic)
+├── api/                              # All backend API endpoints
+│   ├── auth.php                      # POST — login / logout
+│   ├── admin/                        # Admin-only (role_id = 1)
+│   │   ├── add_user.php              # Create student or faculty account
+│   │   ├── add_school.php            # POST school_name
+│   │   ├── add_course.php            # POST course_name, course_code, duration_years, school_id
+│   │   ├── add_batch.php             # POST school_id, course_id, graduation_year → creates a class
+│   │   ├── add_class.php             # POST class_id, section_name[], ranges[] → creates batch sections
+│   │   ├── add_elective.php          # POST elective_name
+│   │   ├── add_re_exam_group.php     # POST group_name, expires_at
+│   │   ├── add_re_exam_students.php  # Assign students to re-exam group
+│   │   ├── add_elective_students.php # Assign students to elective
+│   │   ├── add_role.php              # POST name
+│   │   ├── delete_*.php              # DELETE via GET ?id= (school, course, class, batch, elective, re_exam_group, role, user)
+│   │   ├── edit_class.php            # Update class SAP ID ranges
+│   │   ├── update_user.php           # Edit user details
+│   │   ├── upload_students.php       # Bulk import via .xlsx
+│   │   ├── demote_students.php       # Year-level demotion (batch)
+│   │   ├── demote_single_student.php # Single student demotion
+│   │   ├── remove_elective_student.php
+│   │   ├── remove_re_exam_student.php
+│   │   ├── reset_password.php        # POST JSON {user_id, new_password}
+│   │   ├── search_student.php        # GET ?q= full-text search
+│   │   ├── get_dashboard_stats.php   # Live counts: students, faculty, quizzes
+│   │   ├── get_course_batches.php    # GET ?course_id=
+│   │   ├── get_students_for_demotion.php
+│   │   ├── cleanup_preview.php       # Preview orphan records
+│   │   └── execute_cleanup.php       # Delete orphan records
+│   ├── faculty/                      # Faculty-only (role_id = 2)
+│   │   ├── create_quiz.php           # POST — full quiz config
+│   │   ├── update_quiz.php           # Edit quiz metadata
+│   │   ├── delete_quiz.php           # Delete quiz and its questions
+│   │   ├── update_quiz_status.php    # POST JSON {quiz_id, new_status_id}
+│   │   ├── add_manual_question.php   # POST — question + options + correct answer
+│   │   ├── update_question.php       # Edit existing question
+│   │   ├── delete_question.php       # POST JSON {question_id}
+│   │   ├── upload_questions.php      # Bulk import questions via .xlsx
+│   │   ├── get_lobby_students.php    # GET ?id=<quiz_id>
+│   │   ├── get_live_monitoring_data.php # GET ?id=<quiz_id>[&page=][&limit=]
+│   │   ├── get_quiz_results.php      # GET ?quiz_id=
+│   │   ├── get_item_analysis.php     # GET ?quiz_id= — difficulty/discrimination stats
+│   │   ├── export_results.php        # GET ?quiz_id= → .xlsx download
+│   │   ├── publish_results.php       # POST JSON {quiz_id, action}
+│   │   ├── save_evaluation.php       # Grade a descriptive answer
+│   │   └── reenable_student.php      # Re-allow a disqualified student
+│   ├── student/                      # Student-only (role_id = 4)
+│   │   ├── fetch_exam_questions.php  # GET ?id=<quiz_id> — creates attempt, randomises Qs
+│   │   ├── save_answer.php           # POST — persist individual answer
+│   │   ├── finish_exam.php           # POST — submit, auto-grade, calculate score
+│   │   ├── get_attempt_status.php    # GET ?id=<attempt_id>
+│   │   ├── get_detailed_results.php  # GET — per-question breakdown
+│   │   ├── log_event.php             # POST JSON {attempt_id, event_type, description}
+│   │   └── export_student_results.php # GET → personal .xlsx result sheet
+│   ├── shared/                       # Any authenticated user
+│   │   ├── get_quiz_status.php       # GET ?id= (public)
+│   │   ├── get_courses_by_school.php # GET ?school_id=
+│   │   ├── get_batches_by_course.php # GET ?course_id=
+│   │   ├── get_years_by_course.php   # GET ?course_id=
+│   │   ├── get_groups_by_courses.php # GET ?course_ids=1,2,3
+│   │   ├── change_password.php       # POST — authenticated password change
+│   │   └── export_all_results.php   # GET ?quiz_id= → .xlsx (non-student roles)
+│   └── placecom/                     # Placecom role (role_id = 3)
+│       └── get_all_quiz_results.php  # Aggregated results across all quizzes
+│
+├── assets/
+│   ├── css/main.css                  # Single consolidated stylesheet (ITCSS)
+│   ├── js/script.js                  # Merged: login + exam + dashboard logic
+│   ├── images/                       # Logos and icons
 │   └── templates/
-│       ├── footer.php                # Footer template
-│       ├── header.php                # Header template
-│       ├── question_template.xlsx    # Excel template for bulk question upload
+│       ├── question_template.xlsx    # Excel template for bulk question import
 │       └── student_template.xlsx     # Excel template for bulk user import
-├── config/                           # Configuration files
-│   └── database.php                  # Database connection settings
-├── lib/                              # External libraries & dependencies
-│   ├── chartjs/
-│   │   └── chart.umd.js             # Chart.js library
-│   ├── vendor/                       # Composer dependencies (PHPSpreadsheet, etc.)
-│   ├── composer.json                 # Composer configuration
-│   └── composer.lock                 # Locked dependency versions
-├── views/                            # User-facing view pages
-│   ├── admin/                        # Admin dashboard and management pages
-│   │   ├── dashboard.php
-│   │   ├── user_management.php
-│   │   ├── manage_courses.php
-│   │   ├── manage_schools.php
-│   │   ├── manage_roles.php
-│   │   └── upload_students.php
-│   ├── faculty/                      # Faculty pages
-│   │   ├── dashboard.php
-│   │   ├── create_quiz.php
-│   │   ├── manage_quizzes.php
-│   │   ├── edit_question.php
-│   │   ├── evaluate_descriptive.php
-│   │   ├── item_analysis.php
-│   │   └── reports.php
-│   ├── student/                      # Student pages
-│   │   ├── dashboard.php
-│   │   ├── lobby.php                 # Quiz lobby/waiting room
-│   │   ├── exam.php                  # Exam page (main interface)
-│   │   ├── results.php               # Quiz results
-│   │   ├── detailed_results.php
-│   │   ├── export_student_results.php
-│   │   └── disqualified.php
-│   ├── placecom/                     # Placement committee pages
-│   │   ├── dashboard.php
-│   │   └── reports.php
-│   └── shared/                       # Shared pages (all roles)
-│       └── dashboard.php
-├── schema.sql                        # Database schema and tables
-├── index.php                         # Main entry point
+│
+├── config/
+│   ├── database.php                  # PDO connection + error handlers
+│   └── base_url.php                  # Dynamic base URL helper
+│
+├── lib/
+│   ├── chartjs/chart.umd.js          # Chart.js (not tracked in git — download separately)
+│   ├── vendor/                       # Composer packages (PHPSpreadsheet etc.)
+│   ├── composer.json
+│   └── composer.lock
+│
+├── secure-browser/                   # Electron lockdown browser
+│   ├── main.js                       # Electron main process
+│   ├── preload.js                    # Preload script
+│   ├── index.html                    # Landing/start screen
+│   ├── build/icon.ico
+│   └── package.json                  # electron + electron-builder config
+│
+├── tests/                            # PHP CLI test suite (53 tests)
+│   ├── test.php                      # Main runner: php tests/test.php
+│   ├── TestClient.php                # cURL-based HTTP client with session/cookie support
+│   ├── bootstrap.php                 # Fixture setup + teardown (DB)
+│   ├── AuthTest.php                  # 5 auth tests
+│   ├── AdminTest.php                 # 15 admin endpoint tests
+│   ├── FacultyTest.php               # 11 faculty endpoint tests
+│   ├── StudentTest.php               # 10 student workflow tests
+│   └── SharedTest.php                # 12 shared + placecom tests
+│
+├── views/
+│   ├── admin/         # Dashboard, user mgmt, schools, courses, batches, electives, re-exams
+│   ├── faculty/       # Dashboard, quiz builder, live monitor, item analysis, reports
+│   ├── student/       # Dashboard, lobby, exam, results, disqualified
+│   ├── placecom/      # Dashboard, reports
+│   ├── head/          # Department head dashboard
+│   └── shared/        # Shared dashboard, change password
+│
+├── schema.sql                        # Full database schema + seed data
+├── router.php                        # PHP built-in server router (serves static files)
+├── index.php                         # Main entry point / request dispatcher
 ├── login.php                         # Login page
-├── logout.php                        # Logout handler
-├── LICENSE                           # MIT License
-└── README.md                         # This documentation
-
+├── logout.php                        # Session destroy + redirect
+└── README.md
 ```
 
-## 🚀 Quick Start
+---
+
+## 🚀 Installation
 
 ### Prerequisites
-- PHP 7.4 or higher (with PDO and MySQLi extensions)
-- MariaDB 10.3+ or MySQL 5.7+
-- Composer (for PHP dependencies)
-- Git (optional, for cloning)
+- **PHP 8.0+** with extensions: `pdo`, `pdo_mysql`, `curl`, `mbstring`, `gd`, `zip`
+- **MySQL 5.7+** or **MariaDB 10.3+**
+- **Composer** (for PHPSpreadsheet)
+- **Node.js + npm** (only if building the Electron lockdown browser)
 
-### Installation
+### Steps
 
-1. **Clone or download the repository**
+1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/aarushchaudhary/nmims_quiz_app.git
    cd nmims_quiz_app
    ```
 
 2. **Install PHP dependencies**
    ```bash
-   cd lib
-   composer install
-   cd ..
+   cd lib && composer install && cd ..
    ```
 
-3. **Fetch Chart.js library**
-   Create the chartjs directory if it doesn't exist, then download the Chart.js library:
+3. **Download Chart.js** (not tracked in git)
    ```bash
    mkdir -p lib/chartjs
-   curl -o lib/chartjs/chart.umd.js https://cdn.jsdelivr.net/npm/chart.js@3/dist/chart.umd.js
-   ```
-   This downloads the Chart.js library required for data visualization and analytics charts.
-   **Note**: `chart.umd.js` is not tracked in git and must be downloaded during setup (see `.gitignore`).
-
-4. **Configure database**
-   - Ensure MariaDB/MySQL service is running
-   - Import database schema:
-     ```bash
-     mysql -h 127.0.0.1 -u root < schema.sql
-     ```
-   - Default connection: `host=127.0.0.1`, `user=root`, `password=''` (empty), `database=nmims_quiz_app`
-   - **Note**: Credentials are hardcoded in `config/database.php` for the built-in server environment
-
-5. **Start the application**
-   - Navigate to the project root:
-     ```bash
-     cd nmims_quiz_app
-     php -S localhost:8080 router.php
-     
-     ```
-   - Access the app: **http://localhost:8080**
-   - Log in with default credentials (set in database schema)
-
-### Configuration
-- **Database**: Edit `config/database.php` to update connection settings
-- **Base URL**: Automatically configured in `config/base_url.php` for localhost:8080
-- **Static Files**: Router (`router.php`) automatically serves CSS, JS, and images
-
-## 📖 Usage
-
-### For Students
-1. Log in with your credentials
-2. Navigate to available quizzes from the dashboard
-3. Click "Join Quiz" to enter the lobby
-4. Click anywhere on the lobby page to begin the exam
-5. Answer questions and click "Next Question"
-6. Review your answers before final submission
-7. Click "Finish Exam" to submit
-8. View results on the results page
-
-### For Faculty
-1. Log in to access the faculty dashboard
-2. Create a new quiz: Click "Create Quiz" and fill in details
-3. Add questions: Use "Add Question" or bulk upload via Excel
-4. Publish the quiz: Set quiz status to "Active"
-5. Monitor live exams: Use "Live Monitoring" to track student progress
-6. Evaluate answers: Manual evaluation for descriptive questions
-7. Generate reports: Export results and view analytics
-
-### For Administrators
-1. Log in to the admin dashboard
-2. Manage users: Add, edit, or delete student/faculty accounts
-3. Manage academic structure: Schools, courses, batches
-4. Upload users: Use Excel template for bulk import
-5. View system logs: Monitor all system activities
-6. Reset passwords: Reset user credentials if needed
-
-## 🗄️ Database Schema
-
-Key tables:
-- **users** - User accounts with roles
-- **quizzes** - Quiz definitions and metadata
-- **questions** - Quiz questions with type and options
-- **options** - Answer options for MCQ questions
-- **attempts** - Student quiz attempts and submissions
-- **answers** - Individual student answers per question
-- **event_logs** - System activity and audit logs
-- **schools** - Educational institutions
-- **courses** - Academic courses
-
-See `schema.sql` for complete database structure.
-
-## 🔌 API Reference
-
-### Authentication
-- **POST** `/api/auth.php` - Login with username and password
-
-### Student APIs
-- **GET** `/api/student/fetch_exam_questions.php?id=<quiz_id>` - Get quiz questions
-- **POST** `/api/student/save_answer.php` - Save individual answer
-- **POST** `/api/student/finish_exam.php` - Submit exam
-- **GET** `/api/student/get_detailed_results.php` - Get detailed results
-
-### Faculty APIs
-- **POST** `/api/faculty/create_quiz.php` - Create new quiz
-- **POST** `/api/faculty/upload_questions.php` - Bulk upload questions
-- **POST** `/api/faculty/update_quiz_status.php` - Update quiz status
-- **GET** `/api/faculty/get_quiz_results.php` - Get quiz results
-- **GET** `/api/faculty/get_live_monitoring_data.php` - Get live monitoring data
-
-### Admin APIs
-- **POST** `/api/admin/add_user.php` - Create user
-- **POST** `/api/admin/upload_students.php` - Bulk upload users
-
-### Shared APIs
-- **GET** `/api/shared/get_quiz_status.php?id=<quiz_id>` - Get quiz status
-- **GET** `/api/shared/get_courses_by_school.php` - Get courses by school
-- **GET** `/api/shared/get_quiz_reports.php` - Fetch aggregated report data for a quiz
-
-## 🔐 Security
-
-The application implements multiple security measures:
-
-1. **Authentication**: Session-based login system with role validation
-2. **Authorization**: Role-based access control (RBAC) for different user types
-3. **SQL Injection Prevention**: All database queries use prepared statements with parameterized queries
-4. **Input Validation**: Server-side validation of all user inputs
-5. **Password Security**: Passwords hashed using PHP's `password_hash()` function
-6. **Session Management**: Secure session configuration with timeout
-7. **CSRF Protection**: Token-based protection against cross-site requests
-8. **Data Encryption**: Sensitive data encrypted in transit (HTTPS recommended)
-
-## 📝 License
-
-This project is licensed under the **GNU General Public License v3.0** - see the [LICENSE](LICENSE) file for details. You are free to use, modify, and distribute this software under the terms of the GPL 3.0 license.
-
-## 👨‍💻 Author
-
-**Aarush Chaudhary** - STME, NMIMS Hyderabad
-
-## 🙏 Acknowledgments
-
-- NMIMS Hyderabad for institutional support
-- Open-source community for excellent libraries (PHPSpreadsheet, Chart.js)
-- All contributors and testers
-
-## 📧 Support & Issues
-
-For bug reports, feature requests, or questions, please reach out to the development team.
-   cd nm-quiz-app
+   curl -o lib/chartjs/chart.umd.js \
+     https://cdn.jsdelivr.net/npm/chart.js@3/dist/chart.umd.js
    ```
 
-2. **Install PHP dependencies**
+4. **Set up the database**
    ```bash
-   composer install
+   # Create a dedicated DB user (recommended)
+   mysql -u root -p -e "
+     CREATE DATABASE nmims_quiz_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+     CREATE USER 'nmims_quiz_app'@'127.0.0.1' IDENTIFIED BY '123456';
+     GRANT ALL PRIVILEGES ON nmims_quiz_app.* TO 'nmims_quiz_app'@'127.0.0.1';
+   "
+
+   # Import schema
+   mysql -h 127.0.0.1 -u nmims_quiz_app -p123456 nmims_quiz_app < schema.sql
    ```
 
-3. **Create database**
-   ```sql
-   CREATE DATABASE nmims_quiz_db;
-   ```
-
-4. **Import database schema**
+5. **Start the server**
    ```bash
-   mysql -u your_username -p nmims_quiz_db < schema.sql
+   php -S localhost:8080 router.php
    ```
 
-5. **Configure database connection**
-   - Copy `config/database.php.example` to `config/database.php`
-   - Update database credentials:
-   ```php
-   define('DB_HOST', 'localhost');
-   define('DB_NAME', 'nmims_quiz_db');
-   define('DB_USER', 'your_username');
-   define('DB_PASS', 'your_password');
-   ```
-
-6. **Set proper permissions**
-   ```bash
-   chmod 755 -R nmims_quiz_app/
-   chmod 777 uploads/  # If you have an uploads directory
-   ```
-
-7. **Configure web server**
-   - Point your web server's document root to the `nmims_quiz_app` directory
-   - Ensure mod_rewrite is enabled for Apache
-
-## ⚙️ Configuration
-
-### Application Settings
-Edit `config/constants.php` to configure:
-- Session timeout duration
-- Maximum file upload size
-- Quiz timer settings
-- Proctoring strictness levels
-
-### Email Configuration
-Configure email settings for notifications:
-```php
-define('SMTP_HOST', 'smtp.example.com');
-define('SMTP_PORT', 587);
-define('SMTP_USER', 'your_email@example.com');
-define('SMTP_PASS', 'your_password');
-```
-
-## 📖 Usage
-
-### Initial Setup
-1. Access the application at `http://your-domain.com`
-2. Log in with the default admin credentials:
-   - Username: `admin`
-   - Password: `admin123` (Change immediately!)
-3. Create faculty and student accounts
-4. Faculty can start creating quizzes
-
-### Creating a Quiz (Faculty)
-1. Log in with faculty credentials
-2. Navigate to "Create Quiz"
-3. Fill in quiz details:
-   - Title and description
-   - Time limit and attempt restrictions
-   - Question shuffle settings
-4. Add questions manually or upload via Excel
-5. Save and publish the quiz
-
-### Taking a Quiz (Student)
-1. Log in with student credentials
-2. View available quizzes on dashboard
-3. Click "Join Lobby" for the desired quiz
-4. Wait for faculty to start the exam
-5. Complete all questions within the time limit
-6. Submit the quiz
-
-## 👥 User Roles
-
-### Administrator
-- Full system access
-- User management (CRUD operations)
-- System configuration
-- View all quizzes and results
-
-### Faculty
-- Create and manage quizzes
-- Monitor live exams
-- Grade descriptive answers
-- Generate reports
-- Export results
-
-### Placement Committee
-- Create placement-specific assessments
-- Manage recruitment drives
-- Generate company-wise reports
-- Track candidate performance
-
-### Student
-- Take assigned quizzes
-- View results and feedback
-- Track quiz history
-
-## 🔒 Security Features
-
-- **Authentication**: Session-based authentication with secure password hashing
-- **SQL Injection Prevention**: Prepared statements for all database queries
-- **XSS Protection**: Input sanitization and output escaping
-- **CSRF Protection**: Token-based form submissions
-- **Exam Proctoring**:
-  - Fullscreen enforcement
-  - Tab switching detection
-  - Copy-paste prevention
-  - Right-click disabled during exams
-
-## 📡 API Documentation
-
-### Authentication
-```
-POST /api/auth.php
-Parameters: username, password, role
-Response: {success: boolean, message: string, user_data: object}
-```
-
-### Faculty Endpoints
-```
-POST /api/faculty/create_quiz.php
-GET  /api/faculty/get_quizzes.php
-POST /api/faculty/start_exam.php
-GET  /api/faculty/monitor_progress.php
-```
-
-### Student Endpoints
-```
-POST /api/student/join_lobby.php
-GET  /api/student/fetch_questions.php
-POST /api/student/submit_answer.php
-POST /api/student/finish_exam.php
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Coding Standards
-- Follow PSR-12 for PHP code
-- Use meaningful variable and function names
-- Comment complex logic
-- Write unit tests for new features
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- NMIMS for the project requirements
-- PHPSpreadsheet contributors
-- Chart.js team
-- All contributors to this project
-
-## 📞 Support
-
-For issues and feature requests, please [create an issue](https://github.com/aarushchaudhary/nm-quiz-app/issues) on GitHub.
+6. **Open the app**
+   Navigate to **http://localhost:8080** and log in with the default admin credentials seeded by `schema.sql`.
 
 ---
 
-**Note**: This is an educational project. For production use, ensure proper security auditing and testing.
+## ⚙️ Configuration
+
+### Database (`config/database.php`)
+```php
+define('DB_HOST', '127.0.0.1');
+define('DB_PORT', '3306');
+define('DB_NAME', 'nmims_quiz_app');
+define('DB_USER', 'nmims_quiz_app');
+define('DB_PASS', '123456');
+```
+
+### Base URL (`config/base_url.php`)
+Automatically detects the server host and port — no manual changes needed for localhost. For production, update the `get_base_url()` function to return your domain.
+
+---
+
+## 📖 Usage
+
+### Student Workflow
+1. Log in → view available quizzes on the dashboard
+2. Click **Join Lobby** → wait for faculty to open the exam
+3. Exam starts → answer MCQ / MSQ / descriptive questions
+4. Answers auto-save; a countdown timer tracks remaining time
+5. Click **Finish Exam** → automatic grading
+6. View instant results and per-question breakdown
+
+### Faculty Workflow
+1. **Create Quiz**: set title, time limit, question counts per difficulty, class assignment
+2. **Add Questions**: manually via form, or bulk-upload via Excel template
+3. **Open Quiz**: change status to *Open* → students can enter the lobby
+4. **Start Exam**: status → *In Progress* → exam begins for all lobby members
+5. **Live Monitor**: real-time dashboard showing per-student progress
+6. **End Exam**: status → *Completed*
+7. **Evaluate**: grade descriptive answers, publish results
+8. **Export / Analyse**: download `.xlsx` results, view item analysis charts
+
+### Admin Workflow
+1. **User Management**: add individual users or bulk-import from `.xlsx`
+2. **Academic Structure**: create Schools → Courses → Classes → Batch Sections
+3. **Re-exams & Electives**: create groups, assign students
+4. **Demote Students**: move students down one academic year
+5. **Password Reset**: reset any user's credentials
+6. **Cleanup**: preview and delete orphaned database records
+
+---
+
+## 🔌 API Reference
+
+All endpoints are PHP files under `api/`. Session cookies carry authentication.
+
+### Authentication
+| Method | Endpoint | Body / Params |
+|---|---|---|
+| POST | `api/auth.php` | JSON `{email, password, force?}` |
+
+### Admin Endpoints (role_id = 1)
+| Method | Endpoint | Key Params |
+|---|---|---|
+| GET | `api/admin/get_dashboard_stats.php` | — |
+| POST | `api/admin/add_user.php` | form fields |
+| POST | `api/admin/add_school.php` | `school_name` |
+| POST | `api/admin/add_course.php` | `course_name, course_code, duration_years, school_id` |
+| POST | `api/admin/add_batch.php` | `school_id, course_id, graduation_year` |
+| POST | `api/admin/add_class.php` | `class_id, section_name[], sap_id_range_start[], sap_id_range_end[]` |
+| POST | `api/admin/add_elective.php` | `elective_name` |
+| POST | `api/admin/add_re_exam_group.php` | `group_name, expires_at` |
+| POST | `api/admin/reset_password.php` | JSON `{user_id, new_password}` |
+| POST | `api/admin/upload_students.php` | multipart `.xlsx` |
+| GET  | `api/admin/delete_school.php` | `?id=` |
+| GET  | `api/admin/delete_course.php` | `?id=` |
+| GET  | `api/admin/delete_batch.php` | `?id=` |
+| GET  | `api/admin/delete_class.php` | `?id=` |
+| GET  | `api/admin/delete_elective.php` | `?id=` |
+| GET  | `api/admin/delete_re_exam_group.php` | `?id=` |
+| GET  | `api/admin/search_student.php` | `?q=` |
+| GET  | `api/admin/get_course_batches.php` | `?course_id=` |
+| GET  | `api/admin/cleanup_preview.php` | — |
+| POST | `api/admin/execute_cleanup.php` | — |
+
+### Faculty Endpoints (role_id = 2)
+| Method | Endpoint | Key Params |
+|---|---|---|
+| POST | `api/faculty/create_quiz.php` | form fields |
+| POST | `api/faculty/update_quiz_status.php` | JSON `{quiz_id, new_status_id}` |
+| POST | `api/faculty/add_manual_question.php` | `quiz_id, question_text, question_type_id, difficulty_id, points, options[], correct_answer_single` |
+| POST | `api/faculty/delete_question.php` | JSON `{question_id}` |
+| POST | `api/faculty/publish_results.php` | JSON `{quiz_id, action}` |
+| POST | `api/faculty/save_evaluation.php` | descriptive grade fields |
+| POST | `api/faculty/upload_questions.php` | multipart `.xlsx` |
+| GET  | `api/faculty/get_lobby_students.php` | `?id=<quiz_id>` |
+| GET  | `api/faculty/get_live_monitoring_data.php` | `?id=<quiz_id>[&page=][&limit=]` |
+| GET  | `api/faculty/get_quiz_results.php` | `?quiz_id=` |
+| GET  | `api/faculty/get_item_analysis.php` | `?quiz_id=` |
+| GET  | `api/faculty/export_results.php` | `?quiz_id=` → `.xlsx` |
+
+### Student Endpoints (role_id = 4)
+| Method | Endpoint | Key Params |
+|---|---|---|
+| GET  | `api/student/fetch_exam_questions.php` | `?id=<quiz_id>` |
+| GET  | `api/student/get_attempt_status.php` | `?id=<attempt_id>` |
+| POST | `api/student/save_answer.php` | `attempt_id, question_id, answer` |
+| POST | `api/student/finish_exam.php` | `attempt_id` |
+| POST | `api/student/log_event.php` | JSON `{attempt_id, event_type, description}` |
+| GET  | `api/student/get_detailed_results.php` | `?attempt_id=` |
+| GET  | `api/student/export_student_results.php` | `?attempt_id=` → `.xlsx` |
+
+### Shared Endpoints (any authenticated user)
+| Method | Endpoint | Key Params |
+|---|---|---|
+| GET  | `api/shared/get_quiz_status.php` | `?id=<quiz_id>` |
+| GET  | `api/shared/get_courses_by_school.php` | `?school_id=` |
+| GET  | `api/shared/get_batches_by_course.php` | `?course_id=` |
+| GET  | `api/shared/get_years_by_course.php` | `?course_id=` |
+| GET  | `api/shared/get_groups_by_courses.php` | `?course_ids=1,2,3` |
+| POST | `api/shared/change_password.php` | `old_password, new_password` |
+| GET  | `api/shared/export_all_results.php` | `?quiz_id=` → `.xlsx` (non-students) |
+
+### Placecom Endpoint (role_id = 3)
+| Method | Endpoint | Key Params |
+|---|---|---|
+| GET  | `api/placecom/get_all_quiz_results.php` | — |
+
+---
+
+## 🧪 Testing
+
+A zero-dependency PHP CLI test suite lives in `tests/`. It spins up HTTP requests against the running server using cURL and verifies response codes, JSON structure, and DB state.
+
+### Requirements
+- PHP 8.0+ with **`curl` extension** (`sudo apt install php8.5-curl`)
+- The dev server must be running (`php -S localhost:8080 router.php`)
+
+### Running tests
+```bash
+# Run all 53 tests
+php tests/test.php
+
+# Verbose mode (shows request/response details)
+php tests/test.php --verbose
+
+# Filter to a single suite
+php tests/test.php --filter=Auth
+php tests/test.php --filter=Admin
+php tests/test.php --filter=Faculty
+php tests/test.php --filter=Student
+php tests/test.php --filter=Shared
+
+# Custom server URL
+php tests/test.php --base-url=http://localhost:9000
+```
+
+### What's tested (53 tests)
+
+| Suite | Tests | Coverage |
+|---|---|---|
+| **Auth** | 5 | Login success/failure, role validation |
+| **Admin** | 15 | Dashboard stats, CRUD for schools/courses/classes/batches/electives/re-exam groups, user mgmt, password reset |
+| **Faculty** | 11 | Quiz lifecycle, question CRUD, live monitoring, item analysis, result export |
+| **Student** | 10 | Full exam workflow: create attempt → save answer → submit → results |
+| **Shared** | 12 | Quiz status lookup, course/batch dropdowns, password change, export auth |
+
+### How it works
+- `bootstrap_setup()` inserts a complete set of test fixtures into the real DB before each run
+- `bootstrap_cleanup()` at startup removes any stale fixtures from interrupted previous runs
+- `bootstrap_teardown()` removes all fixtures after the suite finishes — no test data is ever left behind
+- Deletion order respects all FK constraints: `student_answers → student_attempts → questions → quizzes → classes → courses → schools`
+
+---
+
+## 🔒 Secure Lockdown Browser
+
+The `secure-browser/` directory contains an **Electron 28** application that acts as a lockdown browser for exam integrity.
+
+### Features
+- Opens the quiz app in a kiosk-mode window (no address bar, no DevTools)
+- Prevents switching to other applications during the exam
+- Blocks keyboard shortcuts (Alt+Tab, Win key, etc.)
+- Packaged for Windows as an NSIS installer or MSI
+
+### Build
+```bash
+cd secure-browser
+npm install
+npm run dist        # Produces installer in secure-browser/dist/
+```
+
+### Development / launch
+```bash
+npm start           # Opens the Electron window pointing to localhost:8080
+```
+
+---
+
+## 🗄️ Database Schema
+
+Key tables (see `schema.sql` for full DDL):
+
+| Table | Description |
+|---|---|
+| `users` | All accounts; `role_id` FK → `roles` |
+| `roles` | Admin (1), Faculty (2), Placecom (3), Student (4), Head (5) |
+| `students` | Student profile: SAP ID, course, graduation year |
+| `faculties` | Faculty profile |
+| `admins` | Admin profile |
+| `schools` | Top-level institution nodes |
+| `courses` | Academic programmes (FK → `schools`) |
+| `classes` | Cohort per year (FK → `courses`) |
+| `batches` | Sections within a class (FK → `classes`) |
+| `electives` | Elective subject registry |
+| `re_exam_groups` | Re-exam session groups |
+| `quizzes` | Quiz config, status, time limits, question counts |
+| `exam_statuses` | Draft / Open / In Progress / Completed |
+| `questions` | Questions (FK → `quizzes`); type: MCQ / MSQ / Descriptive |
+| `options` | Answer options (FK → `questions`) |
+| `student_attempts` | One row per student per quiz |
+| `student_answers` | Individual answers (FK → `student_attempts`, `questions`) |
+| `event_logs` | Proctoring events: tab switches, fullscreen exits, etc. |
+| `quiz_lobby` | Students who have joined a quiz lobby |
+| `quiz_classes` | Many-to-many: quizzes ↔ classes |
+| `heads` | Department head profile |
+| `placecom_officers` | Placement committee member profile |
+
+---
+
+## 🔐 Security
+
+| Mechanism | Implementation |
+|---|---|
+| **Authentication** | PHP sessions; login required for every protected route |
+| **RBAC** | Every API endpoint checks `$_SESSION['role_id']` against the required role |
+| **SQL Injection** | All queries use PDO prepared statements with bound parameters |
+| **Password Storage** | `password_hash()` (bcrypt) + `password_verify()` |
+| **Input Validation** | `filter_input()`, `FILTER_VALIDATE_INT`, `trim()` on all user inputs |
+| **Proctoring** | Tab-switch, fullscreen exit, copy-paste, right-click events logged per-attempt |
+| **Lockdown Browser** | Electron app enforces kiosk mode for high-stakes exams |
+| **Error Handling** | `display_errors = off`; all errors logged, never leaked to client |
+
+> **Production note**: For a public deployment, add HTTPS (TLS), update `config/database.php` with strong credentials, and configure a proper web server (nginx / Apache) instead of the PHP built-in server.
+
+---
+
+## 📝 License
+
+Licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE) for details.
+
+---
+
+## 👨‍💻 Author
+
+**Aarush Chaudhary** — STME, NMIMS Hyderabad
+
+## 🙏 Acknowledgments
+
+- [PHPSpreadsheet](https://github.com/PHPOffice/PhpSpreadsheet) — Excel import/export
+- [Chart.js](https://www.chartjs.org/) — Result visualisation
+- [Electron](https://www.electronjs.org/) — Lockdown browser shell
+- NMIMS Hyderabad for institutional support
