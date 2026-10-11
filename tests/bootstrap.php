@@ -62,7 +62,9 @@ function bootstrap_cleanup(): void
     $testEmails = [
         'test_admin@nmims.in',
         'test_faculty@nmims.in',
+        'test_faculty_b@nmims.in',
         'test_student@nmims.in',
+        'test_student_b@nmims.in',
     ];
     $userIds = [];
     foreach ($testEmails as $email) {
@@ -201,6 +203,51 @@ function bootstrap_setup(): void
     $pdo->exec("INSERT INTO re_exam_groups (name, expires_at) VALUES ('TEST_REEXAM', DATE_ADD(NOW(), INTERVAL 7 DAY))");
     $GLOBALS['TEST']['re_exam_group_id'] = (int)$pdo->lastInsertId();
 
+    // --- Faculty B (second faculty — does NOT own TEST_QUIZ, used for denial tests) ---
+    $faculty_b_hash = password_hash('FacultyB@123', PASSWORD_DEFAULT);
+    $pdo->exec("INSERT INTO users (email, password_hash, role_id)
+                VALUES ('test_faculty_b@nmims.in', '$faculty_b_hash', 2)");
+    $faculty_b_user_id = (int)$pdo->lastInsertId();
+    $pdo->exec("INSERT INTO faculties (user_id, name, sap_id, school_id, is_visiting)
+                VALUES ($faculty_b_user_id, 'Test Faculty B', 'FAC0002', $school_id, 0)");
+    $GLOBALS['TEST']['faculty_b_user_id']  = $faculty_b_user_id;
+    $GLOBALS['TEST']['faculty_b_email']    = 'test_faculty_b@nmims.in';
+    $GLOBALS['TEST']['faculty_b_password'] = 'FacultyB@123';
+
+    // --- Quiz B (owned by Faculty B — not Faculty A, used for denial tests) ---
+    $pdo->exec("INSERT INTO quizzes
+                    (title, faculty_id, course_id, start_time, end_time,
+                     duration_minutes, status_id,
+                     config_easy_count, config_medium_count, config_hard_count)
+                VALUES ('TEST_QUIZ', $faculty_b_user_id, $sap_course_id,
+                        DATE_SUB(NOW(), INTERVAL 10 MINUTE),
+                        DATE_ADD(NOW(), INTERVAL 50 MINUTE),
+                        60, 3, 1, 0, 0)");
+    $quiz_b_id = (int)$pdo->lastInsertId();
+    $GLOBALS['TEST']['quiz_b_id'] = $quiz_b_id;
+
+    // Question for quiz B (needed so save_answer cross-quiz denial has a real question ID)
+    $pdo->exec("INSERT INTO questions (quiz_id, question_type_id, difficulty_id, question_text, points)
+                VALUES ($quiz_b_id, 1, 1, 'TEST Q (quiz B): What is 1+1?', 1.00)");
+    $question_b_id = (int)$pdo->lastInsertId();
+    $GLOBALS['TEST']['question_b_id'] = $question_b_id;
+
+    $pdo->exec("INSERT INTO options (question_id, option_text, is_correct) VALUES
+                ($question_b_id, '1', 0),
+                ($question_b_id, '2', 1)");
+
+    // --- Student B (second student — does NOT own the test attempt, used for denial tests) ---
+    $sap_id_b   = '88882426002'; // same course, different student number
+    $stu_b_hash = password_hash($sap_id_b, PASSWORD_DEFAULT);
+    $pdo->exec("INSERT INTO users (email, password_hash, role_id)
+                VALUES ('test_student_b@nmims.in', '$stu_b_hash', 4)");
+    $student_b_user_id = (int)$pdo->lastInsertId();
+    $pdo->exec("INSERT INTO students (user_id, name, sap_id, course_id, batch, graduation_year)
+                VALUES ($student_b_user_id, 'Test Student B', '$sap_id_b', $sap_course_id, '2024-2026', 2026)");
+    $GLOBALS['TEST']['student_b_user_id']  = $student_b_user_id;
+    $GLOBALS['TEST']['student_b_email']    = 'test_student_b@nmims.in';
+    $GLOBALS['TEST']['student_b_password'] = $sap_id_b;
+
     echo colorize("[SETUP]", 'cyan') . " Test fixtures created.\n";
 }
 
@@ -211,21 +258,23 @@ function bootstrap_teardown(): void
     $T   = $GLOBALS['TEST'];
 
     // 1. Delete student_answers first (FK → questions which FK → quizzes)
-    if (!empty($T['quiz_id'])) {
-        // Get all attempt IDs for this quiz
-        $stmt = $pdo->prepare("SELECT id FROM student_attempts WHERE quiz_id = ?");
-        $stmt->execute([$T['quiz_id']]);
+    $quizIds = array_filter([$T['quiz_id'] ?? null, $T['quiz_b_id'] ?? null]);
+    foreach ($quizIds as $qid) {
+        $stmt = $pdo->prepare('SELECT id FROM student_attempts WHERE quiz_id = ?');
+        $stmt->execute([$qid]);
         $attemptIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
         foreach ($attemptIds as $aid) {
-            $pdo->prepare("DELETE FROM student_answers WHERE attempt_id = ?")->execute([$aid]);
-            $pdo->prepare("DELETE FROM event_logs WHERE attempt_id = ?")->execute([$aid]);
+            $pdo->prepare('DELETE FROM student_answers WHERE attempt_id = ?')->execute([$aid]);
+            $pdo->prepare('DELETE FROM event_logs WHERE attempt_id = ?')->execute([$aid]);
         }
-        $pdo->prepare("DELETE FROM student_attempts WHERE quiz_id = ?")->execute([$T['quiz_id']]);
+        $pdo->prepare('DELETE FROM student_attempts WHERE quiz_id = ?')->execute([$qid]);
     }
 
-    // 2. Now delete the quiz (cascades to questions, options, quiz_classes, etc.)
-    if (!empty($T['quiz_id'])) {
-        $pdo->prepare("DELETE FROM quizzes WHERE id = ?")->execute([$T['quiz_id']]);
+    // 2. Now delete the quizzes (cascade to questions, options, quiz_classes, etc.)
+    foreach (['quiz_id', 'quiz_b_id'] as $qkey) {
+        if (!empty($T[$qkey])) {
+            $pdo->prepare('DELETE FROM quizzes WHERE id = ?')->execute([$T[$qkey]]);
+        }
     }
 
     // 3. Delete other lookup fixtures (classes before courses, electives/re-exam stand-alone)
@@ -242,7 +291,7 @@ function bootstrap_teardown(): void
     }
 
     // 4. Delete profile rows before users (no CASCADE on faculties/admins/students → users)
-    foreach (['student_user_id', 'faculty_user_id', 'admin_user_id'] as $key) {
+    foreach (['student_b_user_id', 'student_user_id', 'faculty_b_user_id', 'faculty_user_id', 'admin_user_id'] as $key) {
         if (!empty($T[$key])) {
             $uid = $T[$key];
             $pdo->prepare("DELETE FROM admins            WHERE user_id = ?")->execute([$uid]);

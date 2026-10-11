@@ -84,8 +84,8 @@ document.getElementById('change-password-form').addEventListener('submit', async
             body: JSON.stringify({ 
                 current_password: currentPassword,
                 new_password: newPassword, 
-                confirm_password: confirmPassword,
-                is_forced: isForced
+                confirm_password: confirmPassword
+                // is_forced is NOT sent — the server derives it from the session only (Fix #4)
             })
         });
         

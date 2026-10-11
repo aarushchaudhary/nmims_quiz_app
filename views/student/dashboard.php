@@ -12,7 +12,6 @@
   
   $student_user_id = $_SESSION['user_id'];
   $studentName = isset($_SESSION['full_name']) ? htmlspecialchars($_SESSION['full_name']) : 'Student';
-  $is_secure = is_secure_browser();
 
   // --- Fetch the Student's details ---
   $stmt_student = $pdo->prepare("SELECT course_id, graduation_year, sap_id FROM students WHERE user_id = ?");
@@ -118,11 +117,6 @@ if (!function_exists('extract_exam_title')) {
 <div class="manage-container">
     <h2 style="margin-bottom: 10px;">Welcome, <?php echo $studentName; ?>!</h2>
     
-    <?php if (isset($_GET['error']) && $_GET['error'] === 'secure_browser_required'): ?>
-    <div class="message-box" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; margin-bottom: 20px; padding: 12px 20px; border-radius: 6px; text-align: center;">
-        <strong>⚠ Secure Browser Required:</strong> You must use the <strong>NMIMS Secure Browser</strong> application to take exams. Please open the Secure Browser and log in from there.
-    </div>
-    <?php endif; ?>
     
     <p style="text-align:center; color: #555; margin-top:0;">The quizzes listed below are currently available for you to join.</p>
 
@@ -154,11 +148,7 @@ if (!function_exists('extract_exam_title')) {
                         <td class="action-buttons">
                             <?php
                                 if ($quiz['status_name'] != 'Not Started') {
-                                    if ($is_secure) {
-                                        echo '<a href="lobby.php?id=' . $quiz['id'] . '" class="btn-manage" style="background-color: #28a745;">Join Exam</a>';
-                                    } else {
-                                        echo '<span class="btn-manage" style="background-color: #f8f9fa; color: #6c757d; border: 1px solid #ced4da; cursor: not-allowed; display: inline-block; padding: 6px 12px; font-size: 13px;" title="Open the NMIMS Secure Browser to take this exam">Open NMIMS secure browser to start a test 🔒</span>';
-                                    }
+                                    echo '<a href="lobby.php?id=' . $quiz['id'] . '" class="btn-manage" style="background-color: #28a745;">Join Exam</a>';
                                 } else {
                                     echo '<span style="color: #6c757d;">Waiting for faculty...</span>';
                                 }

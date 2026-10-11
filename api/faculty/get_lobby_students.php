@@ -6,6 +6,7 @@
 
 header('Content-Type: application/json');
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 // --- Authorization & Input Check ---
 session_start();
@@ -20,7 +21,11 @@ if (!isset($_GET['id']) || !filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
     exit();
 }
 
-$quiz_id = $_GET['id'];
+$quiz_id = (int) $_GET['id'];
+
+$faculty_id = (int) $_SESSION['user_id'];
+// SECURITY FIX #7: Ownership check.
+require_owned_quiz($pdo, $quiz_id, $faculty_id);
 
 try {
     // This query joins three tables to get student details based on who is in the lobby

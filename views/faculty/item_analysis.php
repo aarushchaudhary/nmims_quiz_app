@@ -1,8 +1,29 @@
 <?php
   $pageTitle = 'Question Item Analysis';
   require_once '../../assets/templates/header.php';
+  require_once '../../config/database.php';
 
-  $quiz_id = isset($_GET['quiz_id']) ? filter_var($_GET['quiz_id'], FILTER_VALIDATE_INT) : null;
+  // SECURITY FIX #7: item_analysis.php previously had NO role check at all.
+  if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
+      redirect('login.php');
+      exit();
+  }
+
+  $quiz_id = isset($_GET['quiz_id']) ? filter_var($_GET['quiz_id'], FILTER_VALIDATE_INT) : false;
+  if (!$quiz_id) {
+      header('Location: manage_quizzes.php?error=not_found');
+      exit();
+  }
+
+  $faculty_id = (int) $_SESSION['user_id'];
+
+  // SECURITY FIX #7: Ownership check — quiz must belong to this faculty.
+  $stmt_own = $pdo->prepare('SELECT id FROM quizzes WHERE id = ? AND faculty_id = ?');
+  $stmt_own->execute([$quiz_id, $faculty_id]);
+  if (!$stmt_own->fetch()) {
+      header('Location: manage_quizzes.php?error=not_found');
+      exit();
+  }
 ?>
 
 <div class="manage-container">

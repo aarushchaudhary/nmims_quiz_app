@@ -283,7 +283,7 @@ nmims_quiz_app/
    ```bash
    mkdir -p lib/chartjs
    curl -o lib/chartjs/chart.umd.js \
-     https://cdn.jsdelivr.net/npm/chart.js@3/dist/chart.umd.js
+   https://cdn.jsdelivr.net/npm/chart.js@3/dist/chart.umd.js
    ```
 
 4. **Set up the database**

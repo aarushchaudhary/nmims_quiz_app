@@ -11,19 +11,18 @@
       exit();
   }
 
-  // --- Secure Browser Enforcement ---
-  enforce_secure_browser_for_exam();
-
   $quiz_id = isset($_GET['id']) ? filter_var($_GET['id'], FILTER_VALIDATE_INT) : null;
 ?>
 
-<!-- Warning Overlay (proctoring) -->
-<div id="warning-overlay" style="display:none;">
-    <div class="warning-box">
-        <h2>Warning!</h2>
-        <p>You have left the exam window. This action has been logged.<br>Please remain on this page to avoid disqualification.</p>
-        <p>You have <span id="warning-count" style="font-weight:bold;">1 of 2</span> warnings.</p>
-    </div>
+<!-- Penalty overlay (shown briefly on each violation) -->
+<div id="penalty-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(220,53,69,0.15); z-index:9999; pointer-events:none;"></div>
+
+<!-- Fullscreen-return overlay: shown when student exits fullscreen, blocks exam until they click back in -->
+<div id="fullscreen-return-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(30,30,30,0.97); z-index:10000; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; cursor:pointer;">
+    <div style="font-size:48px; margin-bottom:20px;">⚠️</div>
+    <h2 style="margin:0 0 12px; font-size:1.8em; color:#ffc107;">Exam Paused — Fullscreen Exited</h2>
+    <p style="font-size:1.1em; margin:0 0 8px; opacity:0.85;">A violation has been recorded.<br>You must stay in fullscreen during the exam.</p>
+    <p style="font-size:1.3em; font-weight:bold; margin:24px 0 0; padding:14px 36px; background:#dc3545; border-radius:8px; letter-spacing:0.5px;">Click anywhere to return to fullscreen</p>
 </div>
 
 <!-- Main Exam Interface (hidden until loaded) -->
@@ -40,6 +39,7 @@
             <div style="display: flex; align-items: center; gap: 15px;">
                 <button id="calculator-btn" style="display: none; background: #e0e0e0; border: 1px solid #ccc; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">🖩 Calculator</button>
                 <span class="timer" id="timer">Time Left: 00:00</span>
+                <span id="penalty-badge" style="background: #6c757d; color: #fff; font-size: 13px; font-weight: bold; padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); letter-spacing: 0.5px;">Violations: 0/3</span>
             </div>
         </div>
 

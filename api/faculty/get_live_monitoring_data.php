@@ -7,13 +7,21 @@
 header('Content-Type: application/json');
 session_start();
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 // --- Authorization & Input Check ---
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2 || !isset($_GET['id'])) {
     http_response_code(403);
     exit(json_encode(['error' => 'Unauthorized access.']));
 }
-$quiz_id = $_GET['id'];
+$quiz_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
+if ($quiz_id === false || !$quiz_id) {
+    json_fail(400, 'Invalid quiz ID.');
+}
+
+$faculty_id = (int) $_SESSION['user_id'];
+// SECURITY FIX #7: Ownership check.
+require_owned_quiz($pdo, $quiz_id, $faculty_id);
 
 // --- Pagination Parameters ---
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -82,7 +90,8 @@ try {
                         sa.id as attempt_id, 
                         sa.submitted_at, 
                         sa.is_disqualified, 
-                        sa.is_manually_locked
+                        sa.is_manually_locked,
+                        (SELECT COUNT(*) FROM event_logs el WHERE el.attempt_id = sa.id AND el.event_type = 'Violation') as violation_count
                     FROM students s
                     JOIN users u ON s.user_id = u.id
                     LEFT JOIN student_attempts sa ON s.user_id = sa.student_id AND sa.quiz_id = ?
@@ -171,7 +180,8 @@ try {
             'progress' => $progress,
             'attempt_id' => $student['attempt_id'],
             'is_disqualified' => (bool)$student['is_disqualified'],
-            'is_manually_locked' => (bool)$student['is_manually_locked']
+            'is_manually_locked' => (bool)$student['is_manually_locked'],
+            'violation_count' => (int)($student['violation_count'] ?? 0)
         ];
     }
 

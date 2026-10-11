@@ -40,50 +40,6 @@ function redirect($path) {
     exit();
 }
 
-/**
- * Check if the current request is coming from the NMIMS Secure Browser.
- * Returns true if the secure browser User-Agent identifier is present.
- */
-function is_secure_browser() {
-    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    return strpos($user_agent, 'NMIMS-Secure-Browser') !== false;
-}
-
-/**
- * Legacy function — blocks access entirely if not using the secure browser.
- */
-function enforce_secure_browser() {
-    if (!is_secure_browser()) {
-        http_response_code(403);
-        die("<h1>Access Denied</h1><p>You must use the NMIMS Secure Browser to access this page.</p>");
-    }
-}
-
-/**
- * Enforce secure browser for exam-related pages and APIs.
- * - For page requests: redirects to the student dashboard with an error message.
- * - For API requests (JSON): returns a 403 JSON error.
- * 
- * Call this at the top of exam-critical files (lobby, exam, disqualified pages and all exam APIs).
- */
-function enforce_secure_browser_for_exam($is_api = false) {
-    if (is_secure_browser()) {
-        return; // Secure browser detected, allow access
-    }
-
-    if ($is_api) {
-        // API endpoint — return JSON error
-        header('Content-Type: application/json');
-        http_response_code(403);
-        exit(json_encode([
-            'error' => 'Access denied. You must use the NMIMS Secure Browser to take exams.'
-        ]));
-    } else {
-        // Page request — redirect to dashboard with error
-        header('Location: ' . get_base_url() . 'views/student/dashboard.php?error=secure_browser_required');
-        exit();
-    }
-}
 
 /**
  * Migration Notes:

@@ -6,6 +6,7 @@
 header('Content-Type: application/json');
 session_start();
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 // --- Authorization & Input Check ---
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2 || !isset($_GET['quiz_id'])) {
@@ -13,6 +14,13 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2 || !isset($_GET['q
     exit(json_encode(['error' => 'Unauthorized access.']));
 }
 $quiz_id = filter_var($_GET['quiz_id'], FILTER_VALIDATE_INT);
+if ($quiz_id === false || !$quiz_id) {
+    json_fail(400, 'Invalid quiz ID.');
+}
+
+$faculty_id = (int) $_SESSION['user_id'];
+// SECURITY FIX #7: Ownership check.
+require_owned_quiz($pdo, $quiz_id, $faculty_id);
 
 try {
     // 1. Get all questions for the quiz

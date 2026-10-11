@@ -20,7 +20,9 @@ $input = json_decode(file_get_contents('php://input'), true);
 $current_password = $input['current_password'] ?? '';
 $new_password = $input['new_password'] ?? '';
 $confirm_password = $input['confirm_password'] ?? '';
-$is_forced = filter_var($input['is_forced'] ?? false, FILTER_VALIDATE_BOOLEAN);
+// SECURITY FIX #4: is_forced is derived from the session only.
+// Any is_forced value in the request body is intentionally ignored.
+$is_forced = !empty($_SESSION['force_password_change']);
 
 if (empty($new_password) || empty($confirm_password) || (!$is_forced && empty($current_password))) {
     echo json_encode(['error' => 'Please fill all required fields.']);
@@ -69,6 +71,9 @@ try {
 
     // Clear the force flag if it existed
     $_SESSION['force_password_change'] = false;
+
+    // Regenerate session ID to prevent session fixation after a credential change
+    session_regenerate_id(true);
 
     echo json_encode(['success' => true]);
 

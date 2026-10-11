@@ -19,14 +19,16 @@
       header('Location: manage_quizzes.php');
       exit();
   }
-  $quiz_id = $_GET['id'];
+  $quiz_id = (int) $_GET['id'];
+  $faculty_id = (int) $_SESSION['user_id'];
   
   // --- Fetch Quiz & Form Data ---
-  $stmt = $pdo->prepare("SELECT title, start_time, end_time, config_easy_count, config_medium_count, config_hard_count, show_results_immediately FROM quizzes WHERE id = :quiz_id");
-  $stmt->execute([':quiz_id' => $quiz_id]);
+  // SECURITY FIX #7: Scope by faculty_id (mirrors edit_quiz.php pattern).
+  $stmt = $pdo->prepare('SELECT title, start_time, end_time, config_easy_count, config_medium_count, config_hard_count, show_results_immediately FROM quizzes WHERE id = :quiz_id AND faculty_id = :faculty_id');
+  $stmt->execute([':quiz_id' => $quiz_id, ':faculty_id' => $faculty_id]);
   $quiz = $stmt->fetch();
   if (!$quiz) {
-      header('Location: manage_quizzes.php');
+      header('Location: manage_quizzes.php?error=not_found');
       exit();
   }
   $question_types = $pdo->query("SELECT id, name FROM question_types")->fetchAll();

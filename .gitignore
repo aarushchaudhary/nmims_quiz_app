@@ -1,4 +1,2 @@
-/secure-browser/node_modules
-/secure-browser/dist
 /lib/vendor
 /lib/chartjs/chart.umd.js

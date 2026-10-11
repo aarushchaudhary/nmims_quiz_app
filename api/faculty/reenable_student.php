@@ -6,6 +6,7 @@
 header('Content-Type: application/json');
 session_start();
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 // --- Authorization & Request Method Check ---
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
@@ -20,6 +21,10 @@ if (!$attempt_id) {
     http_response_code(400);
     exit(json_encode(['success' => false, 'error' => 'Missing attempt ID.']));
 }
+
+$faculty_id = (int) $_SESSION['user_id'];
+// SECURITY FIX #7: Ownership check — attempt must belong to a quiz owned by this faculty.
+require_owned_attempt_as_faculty($pdo, $attempt_id, $faculty_id);
 
 try {
     $pdo->beginTransaction();
@@ -50,6 +55,13 @@ try {
     $stmt_update = $pdo->prepare($sql_update);
     $stmt_update->execute([$attempt_id]);
 
+    // 2a. Clear all violation logs for this attempt so the student's penalty
+    //     counter resets to 0/3 client-side and server-side on resume.
+    $stmt_clear_violations = $pdo->prepare(
+        "DELETE FROM event_logs WHERE attempt_id = ? AND event_type = 'Violation'"
+    );
+    $stmt_clear_violations->execute([$attempt_id]);
+
     // 2. Log this action for auditing purposes.
     $stmt_attempt_info = $pdo->prepare("SELECT student_id FROM student_attempts WHERE id = ?");
     $stmt_attempt_info->execute([$attempt_id]);
@@ -76,6 +88,7 @@ try {
         $pdo->rollBack();
     }
     http_response_code(500);
-    error_log("Re-enable failed: " . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log('Re-enable failed: ' . $e->getMessage());
+    // SECURITY-TODO(#28): previously leaked $e->getMessage() to client.
+    echo json_encode(['success' => false, 'error' => 'An internal error occurred.']);
 }

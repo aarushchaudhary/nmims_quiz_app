@@ -3,6 +3,7 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 // --- Authorization & Request Method Check ---
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
@@ -30,6 +31,11 @@ if (!$quiz_id || empty($question_text) || !$question_type_id || !$difficulty_id 
     redirect('views/faculty/view_quiz.php?id=' . $quiz_id . '&error=Missing+required+fields.');
     exit();
 }
+
+$faculty_id = (int) $_SESSION['user_id'];
+// SECURITY FIX #7: Ownership check — quiz must belong to this faculty.
+// $json = false because this is a form-post endpoint that redirects on error.
+require_owned_quiz($pdo, $quiz_id, $faculty_id, false);
 
 // Removed the restriction that prevented adding descriptive questions when instant results are on.
 

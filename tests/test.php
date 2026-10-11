@@ -159,17 +159,19 @@ require_once "$dir/AdminTest.php";
 require_once "$dir/FacultyTest.php";
 require_once "$dir/StudentTest.php";
 require_once "$dir/SharedTest.php";
+require_once "$dir/SecurityTest.php";
 
 // ─── Build the HTTP client ────────────────────────────────────────────────────
 $http = new TestClient($BASE_URL, $VERBOSE);
 
 // ─── Collect & run all test suites ───────────────────────────────────────────
 $suites = [
-    'Auth'    => new AuthTest($http),
-    'Admin'   => new AdminTest($http),
-    'Faculty' => new FacultyTest($http),
-    'Student' => new StudentTest($http),
-    'Shared'  => new SharedTest($http),
+    'Auth'     => new AuthTest($http),
+    'Admin'    => new AdminTest($http),
+    'Faculty'  => new FacultyTest($http),
+    'Student'  => new StudentTest($http),
+    'Shared'   => new SharedTest($http),
+    'Security' => new SecurityTest($http),
 ];
 
 $allResults  = [];

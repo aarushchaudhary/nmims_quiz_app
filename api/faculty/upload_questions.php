@@ -9,6 +9,7 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 require_once '../../lib/vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -30,6 +31,11 @@ if (!$quiz_id) {
     redirect('views/faculty/manage_quizzes.php?error=Invalid+Quiz+ID.');
     exit();
 }
+
+$faculty_id = (int) $_SESSION['user_id'];
+// SECURITY FIX #7: Ownership check — quiz must belong to this faculty.
+// $json = false because this is a form-post endpoint that redirects on error.
+require_owned_quiz($pdo, $quiz_id, $faculty_id, false);
 
 $file = $_FILES['question_file']['tmp_name'];
 

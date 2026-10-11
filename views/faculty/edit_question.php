@@ -9,17 +9,28 @@
       exit();
   }
   $question_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
+  if (!$question_id) {
+      header('Location: manage_quizzes.php?error=not_found');
+      exit();
+  }
 
-  // --- Fetch Question and its Options ---
-  $stmt_q = $pdo->prepare("SELECT * FROM questions WHERE id = ?");
-  $stmt_q->execute([$question_id]);
+  $faculty_id = (int) $_SESSION['user_id'];
+
+  // SECURITY FIX #7: Scope by faculty_id via JOIN on quizzes.
+  $stmt_q = $pdo->prepare(
+      'SELECT q.* FROM questions q
+       JOIN quizzes qz ON q.quiz_id = qz.id
+       WHERE q.id = ? AND qz.faculty_id = ?'
+  );
+  $stmt_q->execute([$question_id, $faculty_id]);
   $question = $stmt_q->fetch();
 
   if (!$question) {
-      exit('Question not found.');
+      header('Location: manage_quizzes.php?error=not_found');
+      exit();
   }
 
-  $stmt_o = $pdo->prepare("SELECT * FROM options WHERE question_id = ? ORDER BY id ASC");
+  $stmt_o = $pdo->prepare('SELECT * FROM options WHERE question_id = ? ORDER BY id ASC');
   $stmt_o->execute([$question_id]);
   $options = $stmt_o->fetchAll();
 

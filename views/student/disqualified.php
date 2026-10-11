@@ -8,9 +8,6 @@
       exit();
   }
 
-  // --- Secure Browser Enforcement ---
-  enforce_secure_browser_for_exam();
-
   $attempt_id = isset($_GET['attempt_id']) ? filter_var($_GET['attempt_id'], FILTER_VALIDATE_INT) : null;
 ?>
 

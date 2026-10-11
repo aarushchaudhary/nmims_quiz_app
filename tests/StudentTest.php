@@ -179,8 +179,9 @@ class StudentTest
         }
 
         $res = $this->http->postJson('api/student/finish_exam.php', [
-            'attempt_id'     => $attempt_id,
-            'is_disqualified' => false,
+            'attempt_id' => $attempt_id,
+            // NOTE: is_disqualified is no longer accepted from the client (Fix #3).
+            // The server derives it from event_logs violation count.
         ]);
         assert_eq($res['status'], 200, 'finish_exam should return 200');
         assert_true($res['json']['success'] ?? false, 'finish_exam should return success=true');
@@ -202,7 +203,14 @@ class StudentTest
         $res = $this->http->get('api/student/get_detailed_results.php', [
             'attempt_id' => $attempt_id,
         ]);
-        assert_in($res['status'], [200, 403], 'get_detailed_results should return 200 or 403');
+        // show_results_immediately is 0 by default on the test quiz, so the new
+        // server-side publication gate should return results_pending=true (200 body)
+        // OR the quiz was published by a prior FacultyTest run, so results come back.
+        assert_eq($res['status'], 200, 'get_detailed_results should return 200');
+        $body = $res['json'];
+        $valid = (isset($body['results_pending']) && $body['results_pending'] === true)
+              || is_array($body);
+        assert_true($valid, 'get_detailed_results body should be results_pending or an array');
     }
 
     private function testFetchAlreadySubmitted(): void

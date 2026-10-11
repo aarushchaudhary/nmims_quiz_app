@@ -13,9 +13,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 4 || !isset($_GET['i
     exit(json_encode(['error' => 'Unauthorized access.']));
 }
 
-// --- Secure Browser Enforcement ---
-enforce_secure_browser_for_exam(true);
-
 $attempt_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
 
 if (!$attempt_id) {

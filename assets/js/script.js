@@ -80,8 +80,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const ui = {
         examContainer: document.getElementById('exam-container'),
         loadingOverlay: document.getElementById('loading-overlay'),
-        warningOverlay: document.getElementById('warning-overlay'),
-        warningCountSpan: document.getElementById('warning-count'),
+        penaltyOverlay: document.getElementById('penalty-overlay'),
+        penaltyBadge: document.getElementById('penalty-badge'),
         questionLabel: document.getElementById('question-label'),
         questionMarkingScheme: document.getElementById('question-marking-scheme'),
         timer: document.getElementById('timer'),
@@ -107,7 +107,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         countNotAnswered: document.getElementById('count-not-answered'),
         countAnswered: document.getElementById('count-answered'),
         countMarked: document.getElementById('count-marked'),
-        countAnsweredMarked: document.getElementById('count-answered-marked')
+        countAnsweredMarked: document.getElementById('count-answered-marked'),
+        // Fullscreen return overlay
+        fullscreenReturnOverlay: document.getElementById('fullscreen-return-overlay')
     };
 
     // Only run exam logic if exam container exists
@@ -126,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         statuses: []   // Array of 'not_visited' | 'not_answered' | 'answered' | 'marked' | 'answered_marked'
     };
 
-    const proctoringState = { warningCount: 0, examFinished: false };
+    const proctoringState = { penaltyScore: 0, examFinished: false };
 
     // =============================================
     // CORE FUNCTIONS
@@ -424,9 +426,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function saveAndNext() {
         captureCurrentAnswer();
         const idx = examState.currentQuestionIndex;
+        const q = examState.questions[idx];
 
         if (hasAnswer(idx)) {
             examState.statuses[idx] = 'answered';
+            await saveAnswerToServer(idx);
+        } else if (q.question_type_id == 3) {
+            // Always persist descriptive answers to server even if empty,
+            // so any partial text typed by the student is not silently lost.
+            examState.statuses[idx] = 'not_answered';
             await saveAnswerToServer(idx);
         } else {
             examState.statuses[idx] = 'not_answered';
@@ -445,9 +453,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function saveAndMarkForReview() {
         captureCurrentAnswer();
         const idx = examState.currentQuestionIndex;
+        const q = examState.questions[idx];
 
         if (hasAnswer(idx)) {
             examState.statuses[idx] = 'answered_marked';
+            await saveAnswerToServer(idx);
+        } else if (q.question_type_id == 3) {
+            // Always persist descriptive answers to server even if empty.
+            examState.statuses[idx] = 'marked';
             await saveAnswerToServer(idx);
         } else {
             examState.statuses[idx] = 'marked';
@@ -556,11 +569,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (proctoringState.examFinished) return;
         proctoringState.examFinished = true;
 
-        // Save current question before submitting
+        // Capture the currently-displayed question into memory first
         captureCurrentAnswer();
-        const idx = examState.currentQuestionIndex;
-        if (hasAnswer(idx) && !isDisqualified) {
-            await saveAnswerToServer(idx);
+
+        if (!isDisqualified) {
+            // Flush ALL in-memory descriptive answers to the server.
+            // A student may have typed into a textarea and navigated away using the
+            // palette (which doesn't trigger saveAndNext), so those answers only live
+            // in examState.answers and would be overwritten by finish_exam's blank inserts
+            // without this flush.
+            const flushPromises = examState.questions.map((q, idx) => {
+                if (q.id === 'dummy_submit') return Promise.resolve();
+                const a = examState.answers[idx];
+                // Send if there is actual content (MCQ selections or descriptive text)
+                const hasContent = (q.question_type_id == 3)
+                    ? (a.answerText && a.answerText.trim() !== '')
+                    : (a.selectedOptionIds && a.selectedOptionIds.length > 0);
+                if (hasContent) {
+                    return saveAnswerToServer(idx);
+                }
+                return Promise.resolve();
+            });
+            await Promise.all(flushPromises);
         }
 
         let bodyPayload = {
@@ -585,6 +615,140 @@ document.addEventListener('DOMContentLoaded', async function() {
             alert('Could not submit exam. Please check your connection.');
             proctoringState.examFinished = false;
         }
+    }
+
+    // =============================================
+    // PROCTORING
+    // =============================================
+
+    function enterFullscreen() {
+        document.documentElement.requestFullscreen().catch(err => console.warn('Fullscreen request failed:', err));
+    }
+
+    async function addPenalty(reason) {
+        if (proctoringState.examFinished) return;
+        proctoringState.penaltyScore++;
+
+        // Update badge: grey(0) → orange(1) → orange(2) → red(3)
+        const colours = ['#6c757d', '#fd7e14', '#fd7e14', '#dc3545'];
+        if (ui.penaltyBadge) {
+            ui.penaltyBadge.textContent = `Violations: ${proctoringState.penaltyScore}/3`;
+            ui.penaltyBadge.style.background = colours[proctoringState.penaltyScore] || '#dc3545';
+        }
+
+        // Brief red-screen flash so the student notices
+        if (ui.penaltyOverlay) {
+            ui.penaltyOverlay.style.display = 'block';
+            setTimeout(() => { ui.penaltyOverlay.style.display = 'none'; }, 600);
+        }
+
+        // Log violation to server
+        if (examState.attemptId) {
+            try {
+                await fetch(BASE_URL + 'api/student/log_event.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        attempt_id: examState.attemptId,
+                        event_type: 'Violation',
+                        description: reason
+                    })
+                });
+            } catch (e) { console.warn('Failed to log violation:', e); }
+        }
+
+        // Disqualify once 3 violations are reached
+        if (proctoringState.penaltyScore >= 3) {
+            if (examState.attemptId) {
+                try {
+                    await fetch(BASE_URL + 'api/student/log_event.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            attempt_id: examState.attemptId,
+                            event_type: 'Disqualified',
+                            description: 'Student reached 3 violations and was disqualified.'
+                        })
+                    });
+                } catch (e) { console.warn('Failed to log disqualification:', e); }
+            }
+            finishExam(true);
+        }
+    }
+
+    function handleVisibilityChange() {
+        if (document.hidden) {
+            addPenalty(`Tab hidden / window minimized. Violation #${proctoringState.penaltyScore + 1}.`);
+        }
+    }
+
+    function handleWindowBlur() {
+        // Window lost OS focus (Alt+Tab, click outside browser, etc.)
+        // Only count if document is not already hidden — visibilitychange covers that case.
+        if (!document.hidden) {
+            addPenalty(`Window lost focus. Violation #${proctoringState.penaltyScore + 1}.`);
+        }
+    }
+
+    function handleFullscreenChange() {
+        if (!document.fullscreenElement && !proctoringState.examFinished) {
+            addPenalty(`Exited fullscreen. Violation #${proctoringState.penaltyScore + 1}.`);
+            // Show the blocking overlay — the student must click to re-enter fullscreen.
+            // We cannot use setTimeout here because requestFullscreen() requires a
+            // synchronous user gesture; a timeout breaks that requirement and the
+            // browser silently rejects the request.
+            if (ui.fullscreenReturnOverlay) {
+                ui.fullscreenReturnOverlay.style.display = 'flex';
+            }
+        }
+    }
+
+    // When the student clicks the fullscreen-return overlay, re-enter fullscreen
+    // and hide the overlay. This click IS a valid user gesture.
+    if (ui.fullscreenReturnOverlay) {
+        ui.fullscreenReturnOverlay.addEventListener('click', function() {
+            enterFullscreen();
+            ui.fullscreenReturnOverlay.style.display = 'none';
+        });
+    }
+
+    function handleKeyDown(event) {
+        if (proctoringState.examFinished) return;
+
+        const key = event.key.toUpperCase();
+        const isFunctionKey = event.key.startsWith('F') && event.key.length > 1 && !isNaN(event.key.substring(1));
+
+        // Block Alt, Windows/Cmd key, and all Function keys (F1-F12)
+        if (event.altKey || event.metaKey || isFunctionKey) {
+            event.preventDefault();
+            let keyName = 'a system key';
+            if (event.altKey) keyName = 'the Alt key';
+            if (event.metaKey) keyName = 'the Windows/Cmd key';
+            if (isFunctionKey) keyName = `the ${event.key} key`;
+            addPenalty(`Attempted to use ${keyName}. Violation #${proctoringState.penaltyScore + 1}.`);
+            return;
+        }
+
+        // Block specific Ctrl shortcuts
+        const ctrl = event.ctrlKey;
+        const shift = event.shiftKey;
+
+        if (
+            (ctrl && key === 'TAB') ||
+            (ctrl && shift && (key === 'I' || key === 'J' || key === 'C')) ||
+            (ctrl && (key === 'U' || key === 'R' || key === 'T' || key === 'N' || key === 'W' || key === 'P' || key === 'S'))
+        ) {
+            event.preventDefault();
+            addPenalty(`Attempted to use a restricted shortcut (Ctrl+${event.key}). Violation #${proctoringState.penaltyScore + 1}.`);
+        }
+    }
+
+    function attachProctoringListeners() {
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('blur', handleWindowBlur);
     }
 
     // =============================================
@@ -667,10 +831,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function initializeExam() {
         document.body.classList.add('exam-mode');
         if (ui.clickPrompt) {
-            ui.clickPrompt.textContent = 'Click anywhere to begin the exam.';
+            ui.clickPrompt.textContent = 'Click anywhere to begin the exam in fullscreen.';
         }
 
         document.body.addEventListener('click', async () => {
+            enterFullscreen();
+            attachProctoringListeners();
             await startExam();
         }, { once: true });
     }

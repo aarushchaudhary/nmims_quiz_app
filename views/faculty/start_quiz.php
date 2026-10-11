@@ -128,9 +128,9 @@
     <div class="section-box">
         <h3>Real-Time Monitoring (<span id="student-count">0</span>)</h3>
         <table class="data-table">
-            <thead><tr><th>Student Name</th><th>SAP ID</th><th>Status</th><th>Progress</th><th>Action</th></tr></thead>
+            <thead><tr><th>Student Name</th><th>SAP ID</th><th>Status</th><th>Progress</th><th>Violations</th><th>Action</th></tr></thead>
             <tbody id="student-list-body">
-                <tr><td colspan="5" style="text-align:center;">Loading student data...</td></tr>
+                <tr><td colspan="6" style="text-align:center;">Loading student data...</td></tr>
             </tbody>
         </table>
         <div class="pagination-controls" id="pagination-controls"></div>
@@ -166,16 +166,28 @@ document.addEventListener('DOMContentLoaded', function() {
             studentListBody.innerHTML = '';
 
             if (students.length === 0 && data.pagination.total_students > 0) {
-                 studentListBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No students on this page. <a href="#" data-page="1">Go to first page</a>.</td></tr>`;
+                 studentListBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No students on this page. <a href="#" data-page="1">Go to first page</a>.</td></tr>`;
             } else if (students.length === 0) {
-                studentListBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No students are assigned to this quiz.</td></tr>';
+                studentListBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No students are assigned to this quiz.</td></tr>';
             } else {
                 students.forEach(student => {
                     const statusClass = student.status.toLowerCase().replace(/ /g, '_');
                     let actionHtml = 'N/A';
-                    
+
+                    const VIOLATION_LIMIT = 3;
+                    // Penalty badge: show for any student with an active attempt
+                    let violationBadgeHtml = '—';
+                    if (student.attempt_id) {
+                        const v = student.violation_count;
+                        let badgeColor = '#6c757d'; // grey default
+                        if (v >= VIOLATION_LIMIT) badgeColor = '#dc3545'; // red — disqualified
+                        else if (v === VIOLATION_LIMIT - 1) badgeColor = '#fd7e14'; // orange — one away
+                        else if (v > 0) badgeColor = '#ffc107'; // yellow — has violations
+                        violationBadgeHtml = `<span style="display:inline-block; padding:2px 9px; border-radius:12px; font-size:12px; font-weight:bold; color:#fff; background:${badgeColor};">${v} / ${VIOLATION_LIMIT}</span>`;
+                    }
+
                     if (student.is_disqualified && quizStatus === 'In Progress') {
-                        actionHtml = `<button class="button-red btn-reenable" data-attempt-id="${student.attempt_id}">Re-enable</button>`;
+                        actionHtml = `<button class="button-red btn-reenable" data-attempt-id="${student.attempt_id}" style="font-size:13px;">⟳ Revive (${student.violation_count}/3 penalties)</button>`;
                     }
 
                     const row = `<tr>
@@ -183,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td>${escapeHTML(student.sap_id)}</td>
                         <td><span class="status-badge status-${statusClass}">${escapeHTML(student.status)}</span></td>
                         <td>${escapeHTML(student.progress)}</td>
+                        <td>${violationBadgeHtml}</td>
                         <td class="action-buttons">${actionHtml}</td>
                     </tr>`;
                     studentListBody.insertAdjacentHTML('beforeend', row);
@@ -247,10 +260,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const button = e.target.closest('button.btn-reenable');
         if (!button) return;
         
-        if (confirm('Are you sure you want to re-enable this student?')) {
+        if (confirm('Revive this student? Their violation count will be reset to 0 and they can resume the exam.')) {
             const attemptId = button.dataset.attemptId;
             button.disabled = true;
-            button.textContent = '...';
+            button.textContent = 'Reviving...';
             try {
                 const response = await fetch(BASE_URL+'api/faculty/reenable_student.php', {
                     method: 'POST',
@@ -259,10 +272,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 const result = await response.json();
                 if (!result.success) throw new Error(result.error);
-                fetchMonitoringData(currentPage, currentLimit); // Modified: pass currentLimit
+                fetchMonitoringData(currentPage, currentLimit);
             } catch (error) {
                 alert(`Action failed: ${error.message}`);
-                fetchMonitoringData(currentPage, currentLimit); // Modified: pass currentLimit
+                fetchMonitoringData(currentPage, currentLimit);
             }
         }
     });

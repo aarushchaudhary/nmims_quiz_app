@@ -10,11 +10,22 @@
       exit();
   }
   $quiz_id = filter_var($_GET['quiz_id'], FILTER_VALIDATE_INT);
-  
-  // Fetch questions for this quiz
-  $questions_sql = "SELECT q.id, q.question_text, qt.name as type_name, qd.level as difficulty_level FROM questions q JOIN question_types qt ON q.question_type_id = qt.id JOIN question_difficulties qd ON q.difficulty_id = qd.id WHERE quiz_id = :quiz_id ORDER BY q.id DESC";
+  if (!$quiz_id) {
+      header('Location: manage_quizzes.php?error=not_found');
+      exit();
+  }
+  $faculty_id = (int) $_SESSION['user_id'];
+
+  // SECURITY FIX #7: Confirm ownership via JOIN before listing questions.
+  $questions_sql = 'SELECT q.id, q.question_text, qt.name as type_name, qd.level as difficulty_level
+                    FROM questions q
+                    JOIN question_types qt ON q.question_type_id = qt.id
+                    JOIN question_difficulties qd ON q.difficulty_id = qd.id
+                    JOIN quizzes qz ON q.quiz_id = qz.id
+                    WHERE q.quiz_id = :quiz_id AND qz.faculty_id = :faculty_id
+                    ORDER BY q.id DESC';
   $questions_stmt = $pdo->prepare($questions_sql);
-  $questions_stmt->execute([':quiz_id' => $quiz_id]);
+  $questions_stmt->execute([':quiz_id' => $quiz_id, ':faculty_id' => $faculty_id]);
   $questions = $questions_stmt->fetchAll();
 ?>
 

@@ -60,6 +60,8 @@ class SharedTest
                 fn() => $this->testChangePasswordRequiresSession()),
             test('Shared: change_password wrong old password fails',
                 fn() => $this->testChangePasswordWrongOld()),
+            test('Shared: change_password cannot bypass via is_forced in body (Fix #4)',
+                fn() => $this->testChangePasswordForcedBypassIgnored()),
 
             // ── Shared: export_all_results (any non-student role) ──
             test('Shared: export_all_results blocked for student role',
@@ -145,9 +147,10 @@ class SharedTest
     private function testChangePasswordRequiresSession(): void
     {
         $this->http->clearSession();
-        $res = $this->http->post('api/shared/change_password.php', [
-            'old_password' => 'old',
-            'new_password' => 'new',
+        // The API reads json body; send a JSON request without a session.
+        $res = $this->http->postJson('api/shared/change_password.php', [
+            'new_password'     => 'new',
+            'confirm_password' => 'new',
         ]);
         assert_in($res['status'], [302, 403, 401], 'change_password should require a session');
     }
@@ -155,14 +158,20 @@ class SharedTest
     private function testChangePasswordWrongOld(): void
     {
         $this->loginAs('faculty');
-        $res = $this->http->post('api/shared/change_password.php', [
-            'old_password'     => 'definitely_wrong_password_xyz',
+        // API reads JSON from php://input; must use postJson.
+        $res = $this->http->postJson('api/shared/change_password.php', [
+            'current_password' => 'definitely_wrong_password_xyz',
             'new_password'     => 'NewPass@789',
             'confirm_password' => 'NewPass@789',
+            // is_forced is intentionally NOT sent (Fix #4: server derives from session)
         ]);
+        // Server should return HTTP 200 with an error JSON body (it uses echo, not http_response_code).
         assert_in($res['status'], [200, 302, 400, 403], 'Wrong old password should not return 5xx');
+        // Must contain an error key, not success=true.
+        $noSuccess = !isset($res['json']['success']) || $res['json']['success'] !== true;
+        assert_true($noSuccess, 'Wrong password must not return success=true');
 
-        // Verify the original password is still valid
+        // Verify the original password is still valid.
         $this->http->clearSession();
         $loginRes = $this->http->postJson('api/auth.php', [
             'email'    => $GLOBALS['TEST']['faculty_email'],
@@ -170,6 +179,35 @@ class SharedTest
             'force'    => true,
         ]);
         assert_eq($loginRes['json']['status'] ?? '', 'success', 'Original password should still work');
+    }
+
+    /**
+     * Fix #4 regression: sending is_forced=true in the request body when the session
+     * flag is NOT set must NOT bypass the current_password check.
+     */
+    private function testChangePasswordForcedBypassIgnored(): void
+    {
+        // Log in as faculty (force_password_change flag is NOT set in session)
+        $this->loginAs('faculty');
+        $res = $this->http->postJson('api/shared/change_password.php', [
+            'new_password'     => 'HackedPass@999',
+            'confirm_password' => 'HackedPass@999',
+            // No current_password — an attacker is trying to skip it by relying on is_forced
+            // being derived from the request body in old code. The field is now deliberately omitted.
+        ]);
+        // Should fail because force_password_change is NOT in session, so current_password is required.
+        $noSuccess = !isset($res['json']['success']) || $res['json']['success'] !== true;
+        assert_true($noSuccess, 'Fix #4: omitting current_password without session flag must not succeed');
+
+        // Verify password was NOT changed.
+        $this->http->clearSession();
+        $loginRes = $this->http->postJson('api/auth.php', [
+            'email'    => $GLOBALS['TEST']['faculty_email'],
+            'password' => $GLOBALS['TEST']['faculty_password'],
+            'force'    => true,
+        ]);
+        assert_eq($loginRes['json']['status'] ?? '', 'success',
+            'Fix #4: original password must still work after bypass attempt');
     }
 
     private function testExportAllResultsBlockedForStudent(): void
