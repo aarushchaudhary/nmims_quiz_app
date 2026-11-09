@@ -1,6 +1,8 @@
 <?php
-session_start(['cookie_samesite' => 'Lax']); // before database.php, so the regenerated cookie keeps SameSite
+// Before database.php, so the regenerated cookie keeps SameSite and HttpOnly (same as api/auth.php).
+session_start(['cookie_samesite' => 'Lax', 'cookie_httponly' => true]);
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 header('Content-Type: application/json');
 
@@ -36,6 +38,11 @@ if ($new_password !== $confirm_password) {
 
 if (strlen($new_password) < 6) {
     echo json_encode(['error' => 'Password must be at least 6 characters long.']);
+    exit();
+}
+
+if ($new_password === DEFAULT_PASSWORD) {
+    echo json_encode(['error' => 'Choose a password other than the default one.']);
     exit();
 }
 

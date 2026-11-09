@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      # Throwaway database that only exists inside this CI job.
+      DB_PASS: ci-password
+
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: ci-root-password
+          MARIADB_DATABASE: nmims_quiz_app
+          MARIADB_USER: nmims_quiz_app
+          MARIADB_PASSWORD: ci-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: curl, pdo_mysql, mbstring, zip, gd, xml, dom, fileinfo
+          tools: composer
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --working-dir=lib --no-interaction --no-progress --prefer-dist
+
+      - name: Load database schema
+        run: mysql -h 127.0.0.1 -u nmims_quiz_app -p"$DB_PASS" nmims_quiz_app < schema.sql
+
+      - name: Start app server
+        run: |
+          php -S localhost:8080 router.php > server.log 2>&1 &
+          for i in $(seq 1 20); do curl -s -o /dev/null http://localhost:8080/login.php && exit 0; sleep 1; done
+          echo "Server did not start"; cat server.log; exit 1
+
+      - name: Run tests
+        run: php tests/test.php
+
+      - name: Show server log
+        if: failure()
+        run: cat server.log

@@ -113,14 +113,7 @@
     </div>
 
     <?php
-    if (isset($_GET['success'])) { echo '<div class="message-box success-message">' . htmlspecialchars($_GET['success']) . '</div>'; }
-    if (!empty($_SESSION['new_user_password'])) {
-        $np = $_SESSION['new_user_password'];
-        echo '<div class="message-box warning-message">Temporary password for ' . htmlspecialchars($np['email'])
-           . ': <strong>' . htmlspecialchars($np['password']) . '</strong> (shown only once — the student must change it at first login)</div>';
-        unset($_SESSION['new_user_password']);
-    }
-    if (isset($_GET['error'])) { echo '<div class="message-box error-message">' . htmlspecialchars($_GET['error']) . '</div>'; }
+    if (isset($_GET['success'])) { echo '<div class="message-box success-message">' . htmlspecialchars($_GET['success']) . '</div>'; }    if (isset($_GET['error'])) { echo '<div class="message-box error-message">' . htmlspecialchars($_GET['error']) . '</div>'; }
     ?>
 
     <table class="data-table">

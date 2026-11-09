@@ -20,15 +20,6 @@
         if (isset($_GET['success'])) { echo '<div class="message-box success-message">✅ ' . htmlspecialchars($_GET['message']) . '</div>'; }
         if (isset($_GET['error'])) { echo '<div class="message-box error-message">❌ ' . htmlspecialchars($_GET['message']) . '</div>'; }
         
-        if (!empty($_SESSION['upload_passwords'])) {
-            echo '<div class="message-box warning-message"><h4>Temporary passwords (shown only once — copy them now)</h4>'
-               . '<table class="data-table"><tr><th>Name</th><th>Email</th><th>SAP ID</th><th>Temporary password</th></tr>';
-            foreach ($_SESSION['upload_passwords'] as $row) {
-                echo '<tr><td>' . implode('</td><td>', array_map('htmlspecialchars', $row)) . '</td></tr>';
-            }
-            echo '</table></div>';
-            unset($_SESSION['upload_passwords']);
-        }
         if (isset($_SESSION['upload_errors']) && !empty($_SESSION['upload_errors'])) {
             echo '<div class="message-box warning-message"><h4>⚠️ Upload Warnings:</h4><ul>';
             foreach ($_SESSION['upload_errors'] as $error) {
@@ -44,7 +35,7 @@
             <p style="margin-bottom: 8px;">The file <strong>must</strong> be an `.xlsx` file and contain the following headers in this exact order:</p>
             <p style="text-align: center; margin: 15px 0;"><code>Name, Email, SAP ID</code></p>
             <p style="margin-top: 8px; font-size: 13px;">
-                <strong>Note:</strong> Passwords, Schools, Courses, and Batches are automatically generated based on the student's 11-digit SAP ID. Emails must end with <code>nmims.in</code>.
+                <strong>Note:</strong> Schools, Courses, and Batches are set automatically from the student's 11-digit SAP ID. Every student starts with the password <code>password</code> and must change it at first login. Emails must end with <code>nmims.in</code>.
             </p>
         </div>
 

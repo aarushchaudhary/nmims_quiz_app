@@ -44,11 +44,12 @@ set_exception_handler(function ($e) {
 require_once __DIR__ . "/base_url.php";
 
 // --- MariaDB/MySQL Credentials ---
-define("DB_HOST", "127.0.0.1");
-define("DB_PORT", "3306");
-define("DB_NAME", "nmims_quiz_app");
-define("DB_USER", "nmims_quiz_app");
-// Password comes from the environment, never from the repo (e.g. DB_PASS=... php -S ...).
+// All set from the environment (Apache: SetEnv; php -S: shell variables). See README → Configuration.
+// The password has no default: it never lives in the repo.
+define("DB_HOST", getenv("DB_HOST") ?: "127.0.0.1");
+define("DB_PORT", getenv("DB_PORT") ?: "3306");
+define("DB_NAME", getenv("DB_NAME") ?: "nmims_quiz_app");
+define("DB_USER", getenv("DB_USER") ?: "nmims_quiz_app");
 define("DB_PASS", getenv("DB_PASS") ?: "");
 
 // --- Data Source Name (DSN) ---
@@ -96,5 +97,17 @@ if (!empty($_SESSION['user_id'])) {
     $stmt_session->execute([$_SESSION['user_id']]);
     if ($stmt_session->fetchColumn() !== session_id()) {
         $_SESSION = [];
+    }
+}
+
+// --- "Change your password first" also applies to direct API calls ---
+// Pages already redirect in assets/templates/header.php; here every other API is refused
+// until the password is changed. Login and the password-change API stay open.
+if (!empty($_SESSION['force_password_change'])) {
+    $script = str_replace('\\', '/', $_SERVER['SCRIPT_FILENAME'] ?? '');
+    if (strpos($script, '/api/') !== false && !preg_match('#/api/(auth|shared/change_password)\.php$#', $script)) {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        exit(json_encode(['error' => 'Please change your password before continuing.']));
     }
 }

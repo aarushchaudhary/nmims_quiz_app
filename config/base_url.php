@@ -1,27 +1,15 @@
 <?php
 /**
  * base_url.php
- * Centralized Base URL configuration for NMIMS Quiz App
- * 
- * This file provides a unified way to handle URLs across different environments:
- * - XAMPP/Apache subdirectory: /nmims_quiz_app/
- * - Built-in server root: /
- * - Environment variables or $_ENV can be used for runtime configuration
+ * The URL path the app is served under, used for every link, asset and redirect.
+ *
+ * Set BASE_URL in the environment (Apache: `SetEnv BASE_URL /quiz/`):
+ * - "/"       app at the root of a domain or virtual host (default; also `php -S`)
+ * - "/quiz/"  app in a sub-folder of the web root
+ * getenv() is used, not $_ENV: production php.ini leaves $_ENV empty (variables_order = "GPCS").
  */
+define('BASE_URL', rtrim(getenv('BASE_URL') ?: '/', '/') . '/');
 
-// Detect environment and set BASE_URL accordingly
-$environment = $_ENV['APP_ENV'] ?? 'development';
-
-if ($environment === 'production') {
-    // For production, configure based on your actual domain
-    define('BASE_URL', $_ENV['BASE_URL'] ?? 'http://localhost:8080/');
-} else {
-    // For development (built-in server), use root path
-    // For XAMPP, change to '/nmims_quiz_app/'
-    define('BASE_URL', '/');
-}
-
-// Additional utility functions for path handling
 function get_base_url() {
     return BASE_URL;
 }
@@ -40,13 +28,7 @@ function redirect($path) {
     exit();
 }
 
-
-/**
- * Migration Notes:
- * - For XAMPP (Apache in subdirectory): Change BASE_URL to '/nmims_quiz_app/'
- * - For built-in server (port 8080): Keep BASE_URL as '/'
- * - For Docker/production: Set BASE_URL via environment variable
- * 
+/*
  * Usage:
  * - In PHP: echo get_asset_url('assets/css/main.css');
  * - In HTML: <link href="<?= get_asset_url('assets/css/main.css') ?>">

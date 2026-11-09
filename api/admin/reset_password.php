@@ -26,8 +26,8 @@ try {
     // Hash the new password for secure storage
     $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
 
-    // Update the user's password in the database
-    $sql = "UPDATE users SET password_hash = ? WHERE id = ?";
+    // Update the password; the user must change it at next login. A reset also lifts a login lockout.
+    $sql = "UPDATE users SET password_hash = ?, must_change_password = 1, failed_login_count = 0, locked_until = NULL WHERE id = ?";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$password_hash, $user_id]);
 

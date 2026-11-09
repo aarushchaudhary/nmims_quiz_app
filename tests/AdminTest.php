@@ -36,6 +36,8 @@ class AdminTest
                 fn() => $this->testDashboardStats()),
             test('Admin: add_user missing role returns redirect (no crash)',
                 fn() => $this->testAddUserMissingFields()),
+            test('Admin: new user starts with password "password" and must change it',
+                fn() => $this->testNewUserGetsDefaultPassword()),
             test('Admin: add_school and delete_school via GET id',
                 fn() => $this->testSchoolCRUD()),
             test('Admin: add_course and delete_course via GET id',
@@ -85,6 +87,34 @@ class AdminTest
         $this->loginAsAdmin();
         $res = $this->http->post('api/admin/add_user.php', []);
         assert_in($res['status'], [302, 200, 400], 'Should redirect or error gracefully on missing fields');
+    }
+
+    private function testNewUserGetsDefaultPassword(): void
+    {
+        $pdo   = get_test_pdo();
+        $email = 'phpunit_default_pw@nmims.in';
+        $this->loginAsAdmin();
+        $this->http->post('api/admin/add_user.php', ['email' => $email, 'full_name' => 'PHPUnit Default PW', 'role_id' => 3]);
+        $stmt = $pdo->prepare('SELECT id, password_hash, must_change_password FROM users WHERE email = ?');
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+        try {
+            assert_true($user !== false, 'add_user should create the account');
+            assert_true(password_verify('password', $user['password_hash']), 'New account should start with the password "password"');
+            assert_eq((int) $user['must_change_password'], 1, 'New account must change its password at first login');
+
+            // First login is forced to change the password, and "password" itself is refused.
+            $this->http->clearSession();
+            $this->http->postJson('api/auth.php', ['email' => $email, 'password' => 'password', 'force' => true]);
+            $res = $this->http->postJson('api/shared/change_password.php',
+                ['new_password' => 'password', 'confirm_password' => 'password']);
+            assert_true(isset($res['json']['error']), 'Changing to the default password must be refused');
+        } finally {
+            if ($user) {
+                $pdo->prepare('DELETE FROM placecom_officers WHERE user_id = ?')->execute([$user['id']]);
+                $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$user['id']]);
+            }
+        }
     }
 
     /**
@@ -319,10 +349,15 @@ class AdminTest
         assert_eq($res['status'], 200, 'reset_password should return 200 on success');
         assert_true($res['json']['success'] ?? false, 'reset_password should return success=true');
 
-        // Restore original password
+        // A reset password must be changed at the next login.
         $pdo  = get_test_pdo();
+        $stmt = $pdo->prepare('SELECT must_change_password FROM users WHERE id = ?');
+        $stmt->execute([$GLOBALS['TEST']['faculty_user_id']]);
+        assert_eq((int) $stmt->fetchColumn(), 1, 'reset_password should force a password change at next login');
+
+        // Restore original password (and clear the flag so the faculty tests can use the account)
         $hash = password_hash($GLOBALS['TEST']['faculty_password'], PASSWORD_DEFAULT);
-        $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")
+        $pdo->prepare("UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?")
             ->execute([$hash, $GLOBALS['TEST']['faculty_user_id']]);
     }
 

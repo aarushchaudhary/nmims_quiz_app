@@ -45,10 +45,7 @@
                 <input type="email" id="email" name="email" placeholder="example@nmims.edu" required>
             </div>
         </div>
-        <div class="form-group" id="password-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
-        </div>
+        <p style="color: #666; font-size: 0.9em;">Every new account starts with the password <strong>password</strong>. The user must change it at first login.</p>
         
         <hr>
 
@@ -60,7 +57,7 @@
                         <label>SAP ID (11 Digits)</label>
                         <input type="text" name="sap_id" id="sap_id" minlength="11" maxlength="11" pattern="\d{11}" title="Must be exactly 11 digits">
                         <div id="sap-preview" style="margin-top: 8px; font-size: 0.9em; display: none;"></div>
-                        <small style="color: #666; font-size: 0.8em; margin-top: 5px; display: block;">Note: a random temporary password will be generated and shown once after saving. School, Course, and Batch will be assigned automatically based on SAP ID.</small>
+                        <small style="color: #666; font-size: 0.8em; margin-top: 5px; display: block;">Note: School, Course, and Batch will be assigned automatically based on SAP ID.</small>
                     </div>
                 </div>
             </div>
@@ -138,14 +135,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (roleText === 'student') {
             studentFields.style.display = 'block';
-            document.getElementById('password-group').style.display = 'none';
-            document.getElementById('password').removeAttribute('required');
             document.getElementById('sap_id').setAttribute('required', 'required');
             document.getElementById('email').setAttribute('pattern', '.*nmims\\.in$');
             document.getElementById('email').setAttribute('title', 'Student email must end with nmims.in');
         } else {
-            document.getElementById('password-group').style.display = 'block';
-            document.getElementById('password').setAttribute('required', 'required');
             document.getElementById('sap_id').removeAttribute('required');
             document.getElementById('email').removeAttribute('pattern');
             document.getElementById('email').removeAttribute('title');

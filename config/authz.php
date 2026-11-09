@@ -10,6 +10,13 @@
  * both cases return the same generic error so we don't leak existence.
  */
 
+/**
+ * Starting password of every account an admin creates (form or Excel upload).
+ * users.must_change_password = 1 forces the change at first login, and
+ * api/shared/change_password.php refuses this value as the new password.
+ */
+const DEFAULT_PASSWORD = 'password';
+
 /** Emit a JSON error with the given HTTP status code and exit. */
 function json_fail(int $status, string $message): never
 {

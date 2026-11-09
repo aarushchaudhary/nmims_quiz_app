@@ -50,9 +50,53 @@ class FacultyTest
                 fn() => $this->testPublishResults()),
             test('Faculty: get_item_analysis returns JSON',
                 fn() => $this->testGetItemAnalysis()),
+            test('Faculty: ending a quiz grades attempts the student never submitted',
+                fn() => $this->testCompleteGradesOpenAttempts()),
             test('Faculty: export_results returns content',
                 fn() => $this->testExportResults()),
         ];
+    }
+
+    private function testCompleteGradesOpenAttempts(): void
+    {
+        $pdo = get_test_pdo();
+        $T   = $GLOBALS['TEST'];
+        $pdo->exec("INSERT INTO quizzes
+                        (title, faculty_id, course_id, start_time, end_time, duration_minutes, status_id,
+                         config_easy_count, config_medium_count, config_hard_count)
+                    VALUES ('TEST_QUIZ', {$T['faculty_user_id']}, {$T['sap_course_id']},
+                            DATE_SUB(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 50 MINUTE),
+                            60, 3, 0, 0, 0)");
+        $quiz_id = (int) $pdo->lastInsertId();
+        $pdo->prepare("INSERT INTO questions (quiz_id, question_type_id, difficulty_id, question_text, points)
+                       VALUES (?, 1, 1, 'TEST auto-submit question', 3)")->execute([$quiz_id]);
+        $qid = (int) $pdo->lastInsertId();
+        $pdo->prepare("INSERT INTO options (question_id, option_text, is_correct) VALUES (?, 'right', 1)")->execute([$qid]);
+        $right = (int) $pdo->lastInsertId();
+
+        // A student answered correctly, then closed the laptop without submitting.
+        $pdo->prepare('INSERT INTO student_attempts (quiz_id, student_id, attempt_end_time, questions_json)
+                       VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR), ?)')
+            ->execute([$quiz_id, $T['student_user_id'], json_encode([['id' => $qid]])]);
+        $attempt_id = (int) $pdo->lastInsertId();
+        $pdo->prepare('INSERT INTO student_answers (attempt_id, question_id, selected_option_ids, time_spent_seconds)
+                       VALUES (?, ?, ?, 0)')->execute([$attempt_id, $qid, json_encode([$right])]);
+
+        try {
+            $this->loginAsFaculty();
+            $res = $this->http->postJson('api/faculty/update_quiz_status.php', ['quiz_id' => $quiz_id, 'new_status_id' => 4]);
+            assert_eq($res['status'], 200, 'Completing the quiz should succeed');
+            assert_eq($res['json']['auto_submitted'] ?? null, 1, 'One open attempt should be auto-submitted');
+
+            $stmt = $pdo->prepare('SELECT submitted_at, total_score FROM student_attempts WHERE id = ?');
+            $stmt->execute([$attempt_id]);
+            $row = $stmt->fetch();
+            assert_true($row['submitted_at'] !== null, 'Open attempt should be submitted when the quiz ends');
+            assert_eq((float) $row['total_score'], 3.0, 'Open attempt should be graded');
+        } finally {
+            $pdo->prepare('DELETE FROM student_attempts WHERE id = ?')->execute([$attempt_id]);
+            $pdo->prepare('DELETE FROM quizzes WHERE id = ?')->execute([$quiz_id]);
+        }
     }
 
     private function testAuthGuards(): void

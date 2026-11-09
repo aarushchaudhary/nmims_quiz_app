@@ -6,12 +6,9 @@
  * Both modules are independent and wrapped in DOMContentLoaded listeners.
  */
 
-// --- Dynamic Base URL Configuration ---
-// This allows the app to work on different environments:
-// - Built-in server (localhost:8080): /
-// - XAMPP subdirectory: /nmims_quiz_app/
-// - Production: your actual domain
-window.BASE_URL = window.BASE_URL || (window.location.pathname.includes('nmims_quiz_app') ? '/nmims_quiz_app/' : '/');
+// --- Base URL ---
+// Set on every page by assets/templates/header.php from config/base_url.php (BASE_URL env var).
+window.BASE_URL = window.BASE_URL || '/';
 
 /* ========== LOGIN MODULE ========== */
 document.addEventListener('DOMContentLoaded', function() {
@@ -600,11 +597,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
 
         try {
-            await fetch(BASE_URL + 'api/student/finish_exam.php', {
+            const response = await fetch(BASE_URL + 'api/student/finish_exam.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(bodyPayload)
             });
+            // A server error (e.g. overload at the end-of-exam rush) must not look like a successful submit.
+            if (!response.ok) throw new Error('Submit failed with status ' + response.status);
 
             if (isDisqualified) {
                 window.location.href = `disqualified.php?attempt_id=${examState.attemptId}`;

@@ -5,6 +5,7 @@
  */
 session_start();
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 // --- Authorization Check ---
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
@@ -14,19 +15,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
 
 // --- Retrieve Core User Data ---
 $email = trim($_POST['email']);
-$password = $_POST['password'] ?? '';
+$password = DEFAULT_PASSWORD; // every new account; must be changed at first login
 $role_id = filter_input(INPUT_POST, 'role_id', FILTER_VALIDATE_INT);
 $full_name = trim($_POST['full_name']);
 $is_visiting = isset($_POST['is_visiting']) ? 1 : 0;
 $sap_id = $_POST['sap_id'] ?? '';
 
-if ($role_id == 4) {
-    // Random temporary password (not the guessable SAP ID); shown once to the admin.
-    $password = bin2hex(random_bytes(4));
-}
-
 // --- Validation ---
-if (empty($email) || empty($password) || empty($full_name) || !$role_id) {
+if (empty($email) || empty($full_name) || !$role_id) {
     redirect('views/admin/add_user.php?error=missing_fields');
     exit();
 }
@@ -80,7 +76,7 @@ try {
     // 1. Insert into the main 'users' table
     $sql_user = "INSERT INTO users (email, password_hash, role_id, must_change_password) VALUES (?, ?, ?, ?)";
     $stmt_user = $pdo->prepare($sql_user);
-    $stmt_user->execute([$email, $password_hash, $role_id, $role_id == 4 ? 1 : 0]);
+    $stmt_user->execute([$email, $password_hash, $role_id, 1]);
     $new_user_id = $pdo->lastInsertId();
 
     // 2. Insert into the appropriate details table based on the role
@@ -113,9 +109,6 @@ try {
     }
 
     $pdo->commit();
-    if ($role_id == 4) {
-        $_SESSION['new_user_password'] = ['email' => $email, 'password' => $password];
-    }
     redirect('views/admin/user_management.php?success=User+created+successfully.');
 
 } catch (PDOException $e) {

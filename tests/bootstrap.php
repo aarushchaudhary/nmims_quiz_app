@@ -11,10 +11,11 @@
  */
 
 // ─── DB connection (reuse app config constants) ───────────────────────────────
-define('TEST_DB_HOST', '127.0.0.1');
-define('TEST_DB_PORT', '3306');
-define('TEST_DB_NAME', 'nmims_quiz_app');
-define('TEST_DB_USER', 'nmims_quiz_app');
+// Same environment variables and defaults as config/database.php.
+define('TEST_DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+define('TEST_DB_PORT', getenv('DB_PORT') ?: '3306');
+define('TEST_DB_NAME', getenv('DB_NAME') ?: 'nmims_quiz_app');
+define('TEST_DB_USER', getenv('DB_USER') ?: 'nmims_quiz_app');
 define('TEST_DB_PASS', getenv('DB_PASS') ?: '');
 
 function get_test_pdo(): PDO
@@ -149,7 +150,8 @@ function bootstrap_setup(): void
     $GLOBALS['TEST']['sap_course_id'] = $sap_course_id;
 
     $sap_id    = '88882426001'; // course 8888, 2024-2026, student 001
-    $stu_hash  = password_hash($sap_id, PASSWORD_DEFAULT); // initial password = sap_id
+    // Not the SAP ID: a SAP-ID password forces a password change, which blocks the student APIs under test.
+    $stu_hash  = password_hash('Student@123', PASSWORD_DEFAULT);
     $pdo->exec("INSERT INTO users (email, password_hash, role_id)
                 VALUES ('test_student@nmims.in', '$stu_hash', 4)");
     $student_user_id = (int)$pdo->lastInsertId();
@@ -157,7 +159,7 @@ function bootstrap_setup(): void
                 VALUES ($student_user_id, 'Test Student', '$sap_id', $sap_course_id, '2024-2026', 2026)");
     $GLOBALS['TEST']['student_user_id']  = $student_user_id;
     $GLOBALS['TEST']['student_email']    = 'test_student@nmims.in';
-    $GLOBALS['TEST']['student_password'] = $sap_id;
+    $GLOBALS['TEST']['student_password'] = 'Student@123';
     $GLOBALS['TEST']['student_sap_id']   = $sap_id;
 
     // --- Quiz (status 3 = In Progress, so student answers can be saved) ---
@@ -242,7 +244,7 @@ function bootstrap_setup(): void
 
     // --- Student B (second student — does NOT own the test attempt, used for denial tests) ---
     $sap_id_b   = '88882426002'; // same course, different student number
-    $stu_b_hash = password_hash($sap_id_b, PASSWORD_DEFAULT);
+    $stu_b_hash = password_hash('StudentB@123', PASSWORD_DEFAULT);
     $pdo->exec("INSERT INTO users (email, password_hash, role_id)
                 VALUES ('test_student_b@nmims.in', '$stu_b_hash', 4)");
     $student_b_user_id = (int)$pdo->lastInsertId();
@@ -250,7 +252,7 @@ function bootstrap_setup(): void
                 VALUES ($student_b_user_id, 'Test Student B', '$sap_id_b', $sap_course_id, '2024-2026', 2026)");
     $GLOBALS['TEST']['student_b_user_id']  = $student_b_user_id;
     $GLOBALS['TEST']['student_b_email']    = 'test_student_b@nmims.in';
-    $GLOBALS['TEST']['student_b_password'] = $sap_id_b;
+    $GLOBALS['TEST']['student_b_password'] = 'StudentB@123';
 
     echo colorize("[SETUP]", 'cyan') . " Test fixtures created.\n";
 }

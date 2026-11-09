@@ -8,6 +8,7 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 require_once '../../config/database.php';
+require_once '../../config/grading.php';
 
 // --- Authorization & Request Method Check ---
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
@@ -68,17 +69,40 @@ try {
         $new_status_name = $stmt_status->fetchColumn();
 
         $pdo->commit();
+
+        // Quiz ended: grade every attempt the student never submitted (closed laptop,
+        // lost Wi-Fi, failed submit). One short transaction each so no lock is held long.
+        $graded = 0;
+        if ($new_status_id == 4) {
+            $stmt_open = $pdo->prepare('SELECT id FROM student_attempts WHERE quiz_id = ? AND submitted_at IS NULL AND questions_json IS NOT NULL');
+            $stmt_open->execute([$quiz_id]);
+            foreach ($stmt_open->fetchAll(PDO::FETCH_COLUMN) as $open_attempt_id) {
+                try {
+                    $pdo->beginTransaction();
+                    $graded += finalize_attempt($pdo, (int) $open_attempt_id) ? 1 : 0;
+                    $pdo->commit();
+                } catch (Exception $e) {
+                    // One bad attempt must not stop the others from being graded.
+                    $pdo->rollBack();
+                    error_log("Auto-submit failed for attempt_id {$open_attempt_id}: " . $e->getMessage());
+                }
+            }
+        }
+
         echo json_encode([
             'success' => true,
             'message' => 'Quiz status updated successfully.',
-            'new_status_name' => $new_status_name
+            'new_status_name' => $new_status_name,
+            'auto_submitted' => $graded
         ]);
     } else {
         throw new Exception('No changes made or you are not authorized to perform this action.');
     }
 
 } catch (Exception $e) {
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
     error_log("Quiz status update failed: " . $e->getMessage());
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

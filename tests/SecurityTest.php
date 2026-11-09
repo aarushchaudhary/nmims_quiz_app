@@ -142,6 +142,10 @@ class SecurityTest
                 fn() => $this->testStaleSessionRejected()),
             test('Security: save_answer denied after the attempt deadline',
                 fn() => $this->testSaveAfterDeadlineDenied()),
+            test('Security: 5 wrong passwords lock the account, even for the right password',
+                fn() => $this->testLoginLockout()),
+            test('Security: user who must change password is refused by other APIs',
+                fn() => $this->testForcedPasswordChangeBlocksApis()),
         ];
     }
 
@@ -503,5 +507,48 @@ class SecurityTest
             'time_spent'          => 1,
         ]);
         assert_eq($res['status'], 403, 'save_answer must be denied after the deadline');
+    }
+
+    private function testLoginLockout(): void
+    {
+        $T   = $GLOBALS['TEST'];
+        $pdo = get_test_pdo();
+        try {
+            $this->asGuest();
+            for ($i = 1; $i <= 5; $i++) {
+                $res = $this->http->postJson('api/auth.php', ['email' => $T['student_b_email'], 'password' => "wrong-$i"]);
+                assert_eq($res['status'], 401, "Wrong password #$i should return 401");
+            }
+            $res = $this->http->postJson('api/auth.php',
+                ['email' => $T['student_b_email'], 'password' => $T['student_b_password'], 'force' => true]);
+            assert_eq($res['status'], 429, 'Locked account must refuse even the right password');
+        } finally {
+            $pdo->prepare('UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = ?')
+                ->execute([$T['student_b_user_id']]);
+        }
+        // Unlocked again: the right password works and resets the counter.
+        $this->loginAsStudentB();
+        $stmt = $pdo->prepare('SELECT failed_login_count FROM users WHERE id = ?');
+        $stmt->execute([$T['student_b_user_id']]);
+        assert_eq((int) $stmt->fetchColumn(), 0, 'Successful login should reset the failure count');
+    }
+
+    private function testForcedPasswordChangeBlocksApis(): void
+    {
+        $T   = $GLOBALS['TEST'];
+        $pdo = get_test_pdo();
+        $pdo->prepare('UPDATE users SET must_change_password = 1 WHERE id = ?')->execute([$T['student_b_user_id']]);
+        try {
+            $this->loginAsStudentB();
+            $res = $this->http->get('api/student/fetch_exam_questions.php', ['id' => $T['quiz_id']]);
+            assert_eq($res['status'], 403, 'Other APIs must be refused until the password is changed');
+
+            // The password-change API itself must stay reachable (wrong confirm => its own validation error, not 403).
+            $res = $this->http->postJson('api/shared/change_password.php',
+                ['new_password' => 'abcdef1', 'confirm_password' => 'different']);
+            assert_true($res['status'] !== 403, 'change_password must not be blocked by the forced-change rule');
+        } finally {
+            $pdo->prepare('UPDATE users SET must_change_password = 0 WHERE id = ?')->execute([$T['student_b_user_id']]);
+        }
     }
 }

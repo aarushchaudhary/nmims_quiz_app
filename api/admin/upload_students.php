@@ -5,6 +5,7 @@
  */
 session_start();
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 require_once '../../lib/vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -37,7 +38,8 @@ try {
     $successCount = 0;
     $errorCount = 0;
     $errorMessages = [];
-    $newPasswords = []; // shown once to the admin after the upload
+    // Every uploaded student starts with the default password (must change at first login); hashed once for speed.
+    $password_hash = password_hash(DEFAULT_PASSWORD, PASSWORD_DEFAULT);
 
     // --- Loop from row 2 to skip the header ---
     for ($row = 2; $row <= $highestRow; $row++) {
@@ -84,10 +86,6 @@ try {
         $graduation_year = $end_year;
         $batch = $start_year . '-' . $end_year;
         
-        // Random temporary password (not the guessable SAP ID); must be changed at first login.
-        $temp_password = bin2hex(random_bytes(4));
-        $password_hash = password_hash($temp_password, PASSWORD_DEFAULT);
-        
         try {
             // Create user
             $stmt_user->execute([$email, $password_hash, $student_role_id]);
@@ -96,7 +94,6 @@ try {
             // Create student
             $stmt_student->execute([$new_user_id, $full_name, $sap_id, $course_id, $graduation_year, $batch]);
             $successCount++;
-            $newPasswords[] = [$full_name, $email, $sap_id, $temp_password];
         } catch (Exception $e) {
             $errorCount++;
             $errorMessages[] = "Skipping row $row for user '$full_name': Email or SAP ID already exists in system.";
@@ -111,7 +108,6 @@ try {
         $final_message .= " $errorCount rows were skipped due to errors.";
     }
     $_SESSION['upload_errors'] = $errorMessages;
-    $_SESSION['upload_passwords'] = $newPasswords;
 
     redirect('views/admin/upload_students.php?success=true&message=' . urlencode($final_message));
 

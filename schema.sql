@@ -90,6 +90,8 @@ CREATE TABLE `users` (
   `active_session_id` VARCHAR(255) DEFAULT NULL,
   `role_id`           INT          NOT NULL,
   `must_change_password` TINYINT(1) NOT NULL DEFAULT 0,
+  `failed_login_count` INT        NOT NULL DEFAULT 0,
+  `locked_until`      DATETIME     DEFAULT NULL,
   `is_active`         TINYINT(1)   NOT NULL DEFAULT 1,
   `created_at`        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -292,7 +294,7 @@ CREATE TABLE `student_attempts` (
   `started_at`           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `submitted_at`         TIMESTAMP    NULL,
   `attempt_end_time`     DATETIME     DEFAULT NULL,
-  `questions_json`       TEXT         DEFAULT NULL,
+  `questions_json`       MEDIUMTEXT   DEFAULT NULL,
   `total_score`          DECIMAL(5,2),
   `is_disqualified`      TINYINT(1)   NOT NULL DEFAULT 0,
   `is_manually_locked`   TINYINT(1)   NOT NULL DEFAULT 0,
@@ -312,7 +314,7 @@ CREATE TABLE `student_answers` (
   `is_correct`          TINYINT(1),
   `score_awarded`       DECIMAL(5,2),
   `time_spent_seconds`  INT,
-  UNIQUE (`attempt_id`, `question_id`),
+  UNIQUE KEY `uniq_attempt_question` (`attempt_id`, `question_id`),
   FOREIGN KEY (`attempt_id`)  REFERENCES `student_attempts`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`question_id`) REFERENCES `questions`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -365,3 +367,9 @@ INSERT INTO `roles` (`id`, `name`) VALUES
 (4, 'student'),
 (5, 'school head'),
 (6, 'director');
+
+-- First admin account for a fresh install: log in as admin@nmims.in with the
+-- default password "password"; the app forces a password change at first login.
+INSERT INTO `users` (`id`, `email`, `password_hash`, `role_id`, `must_change_password`) VALUES
+(1, 'admin@nmims.in', '$2y$12$lePCxcaLw.XgWchR2ZaHA.EpdvEHKnD9Mkpboohn07KcmHWbi6PBe', 1, 1);
+INSERT INTO `admins` (`user_id`, `name`) VALUES (1, 'Administrator');
