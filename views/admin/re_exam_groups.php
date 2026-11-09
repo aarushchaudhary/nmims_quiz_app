@@ -55,7 +55,7 @@
                     <td><?php echo $group['student_count']; ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
                         <a href="manage_re_exam_group.php?id=<?php echo $group['id']; ?>" class="btn-edit" style="background-color:#007bff; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none; margin-right: 5px;">Manage Students</a>
-                        <a href="<?= get_base_url() ?>api/admin/delete_re_exam_group.php?id=<?php echo $group['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this group?')" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none;">Delete</a>
+                        <form method="post" action="<?= get_base_url() ?>api/admin/delete_re_exam_group.php" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this group?')"><input type="hidden" name="id" value="<?php echo $group['id']; ?>"><button type="submit" class="btn-delete" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none;">Delete</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>

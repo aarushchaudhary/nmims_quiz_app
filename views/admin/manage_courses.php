@@ -73,7 +73,7 @@
                     <td><?php echo htmlspecialchars($course['duration_years']); ?> Years</td>
                     <td><?php echo htmlspecialchars($course['school_name']); ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
-                        <a href="<?= get_base_url() ?>api/admin/delete_course.php?id=<?php echo $course['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this course?')" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer;">Delete</a>
+                        <form method="post" action="<?= get_base_url() ?>api/admin/delete_course.php" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this course?')"><input type="hidden" name="id" value="<?php echo $course['id']; ?>"><button type="submit" class="btn-delete" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer;">Delete</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>

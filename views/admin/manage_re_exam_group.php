@@ -95,7 +95,7 @@
                     <td><?php echo htmlspecialchars($student['sap_id']); ?></td>
                     <td><?php echo htmlspecialchars($student['name']); ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
-                        <a href="<?= get_base_url() ?>api/admin/remove_re_exam_student.php?group_id=<?php echo $group['id']; ?>&student_id=<?php echo $student['user_id']; ?>" class="btn-delete" onclick="return confirm('Remove this student from the group?')" style="background-color:#dc3545; color:white; border:none; padding: 6px 10px; font-size: 12px; border-radius: 4px; cursor:pointer; text-decoration:none;">Remove</a>
+                        <form method="post" action="<?= get_base_url() ?>api/admin/remove_re_exam_student.php" style="display:inline" onsubmit="return confirm('Remove this student from the group?')"><input type="hidden" name="group_id" value="<?php echo $group['id']; ?>"><input type="hidden" name="student_id" value="<?php echo $student['user_id']; ?>"><button type="submit" class="btn-delete" style="background-color:#dc3545; color:white; border:none; padding: 6px 10px; font-size: 12px; border-radius: 4px; cursor:pointer; text-decoration:none;">Remove</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>

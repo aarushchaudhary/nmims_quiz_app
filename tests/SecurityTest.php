@@ -132,6 +132,16 @@ class SecurityTest
                 fn() => $this->testFix7UploadQuestionsDenied()),
             test('Security Fix #7: Faculty A denied update_question on Faculty B\'s question',
                 fn() => $this->testFix7UpdateQuestionDenied()),
+
+            // Audit fixes
+            test('Security: fetch_exam_questions denied for an unassigned quiz and a not-started quiz',
+                fn() => $this->testIneligibleQuizDenied()),
+            test('Security: log_event denied for student B targeting student A\'s attempt',
+                fn() => $this->testLogEventCrossAttemptDenied()),
+            test('Security: a session replaced by a newer login is rejected; logout frees the account',
+                fn() => $this->testStaleSessionRejected()),
+            test('Security: save_answer denied after the attempt deadline',
+                fn() => $this->testSaveAfterDeadlineDenied()),
         ];
     }
 
@@ -410,5 +420,88 @@ class SecurityTest
             strpos($row['question_text'], 'INJECTED') === false,
             'Fix #7: question text must not be modified by Faculty A'
         );
+    }
+
+    private function testIneligibleQuizDenied(): void
+    {
+        $pdo = get_test_pdo();
+        $T   = $GLOBALS['TEST'];
+        // A running quiz that is NOT assigned to the test class.
+        $pdo->exec("INSERT INTO quizzes
+                        (title, faculty_id, course_id, start_time, end_time, duration_minutes, status_id,
+                         config_easy_count, config_medium_count, config_hard_count)
+                    VALUES ('TEST_QUIZ', {$T['faculty_user_id']}, {$T['sap_course_id']},
+                            DATE_SUB(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 50 MINUTE),
+                            60, 3, 0, 0, 0)");
+        $quiz_id = (int) $pdo->lastInsertId();
+        try {
+            $this->loginAsStudent();
+            $res = $this->http->get('api/student/fetch_exam_questions.php', ['id' => $quiz_id]);
+            assert_eq($res['status'], 403, 'Unassigned quiz must be denied');
+
+            // Assigned, but not started yet.
+            $pdo->prepare('INSERT INTO quiz_classes (quiz_id, class_id) VALUES (?, ?)')->execute([$quiz_id, $T['class_id']]);
+            $pdo->prepare('UPDATE quizzes SET status_id = 1 WHERE id = ?')->execute([$quiz_id]);
+            $res = $this->http->get('api/student/fetch_exam_questions.php', ['id' => $quiz_id]);
+            assert_eq($res['status'], 403, 'Quiz that is not in progress must be denied');
+        } finally {
+            $pdo->prepare('DELETE FROM quizzes WHERE id = ?')->execute([$quiz_id]);
+        }
+    }
+
+    private function testLogEventCrossAttemptDenied(): void
+    {
+        $attempt_id = $GLOBALS['TEST']['attempt_id']
+                   ?? $GLOBALS['TEST']['security_attempt_id']
+                   ?? $this->createAttemptForStudentA();
+        $this->loginAsStudentB();
+        $res = $this->http->postJson('api/student/log_event.php', [
+            'attempt_id'  => $attempt_id,
+            'event_type'  => 'Violation',
+            'description' => 'forged by student B',
+        ]);
+        assert_eq($res['status'], 403, 'Student B must not log events on student A\'s attempt');
+    }
+
+    private function testStaleSessionRejected(): void
+    {
+        $attempt_id = $GLOBALS['TEST']['attempt_id']
+                   ?? $GLOBALS['TEST']['security_attempt_id']
+                   ?? $this->createAttemptForStudentA();
+        $pdo     = get_test_pdo();
+        $user_id = $GLOBALS['TEST']['student_user_id'];
+        $event   = ['attempt_id' => $attempt_id, 'event_type' => 'TAB_SWITCH', 'description' => 'session test'];
+
+        $this->loginAsStudent();
+        $res = $this->http->postJson('api/student/log_event.php', $event);
+        assert_eq($res['status'], 200, 'Current session should work');
+
+        // Simulate a newer login on another device.
+        $pdo->prepare('UPDATE users SET active_session_id = ? WHERE id = ?')->execute(['newer-login-elsewhere', $user_id]);
+        $res = $this->http->postJson('api/student/log_event.php', $event);
+        assert_eq($res['status'], 403, 'Older session must be rejected after a newer login');
+
+        // Logout must clear the stored session so the next login is not a false "logged in elsewhere".
+        $this->loginAsStudent();
+        $this->http->get('logout.php');
+        $stmt = $pdo->prepare('SELECT active_session_id FROM users WHERE id = ?');
+        $stmt->execute([$user_id]);
+        assert_eq($stmt->fetchColumn(), null, 'logout should clear active_session_id');
+    }
+
+    private function testSaveAfterDeadlineDenied(): void
+    {
+        $attempt_id = $this->createAttemptForStudentA(); // fresh, unsubmitted; logs in as A
+        // PHP time, same clock the endpoint compares against.
+        get_test_pdo()->prepare('UPDATE student_attempts SET attempt_end_time = ? WHERE id = ?')
+            ->execute([date('Y-m-d H:i:s', time() - 600), $attempt_id]);
+
+        $res = $this->http->postJson('api/student/save_answer.php', [
+            'attempt_id'          => $attempt_id,
+            'question_id'         => $GLOBALS['TEST']['question_id'],
+            'selected_option_ids' => [$GLOBALS['TEST']['correct_option_id']],
+            'time_spent'          => 1,
+        ]);
+        assert_eq($res['status'], 403, 'save_answer must be denied after the deadline');
     }
 }

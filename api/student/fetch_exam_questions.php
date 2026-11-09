@@ -9,6 +9,7 @@
 header('Content-Type: application/json');
 session_start();
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 // --- Authorization & Input Check ---
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 4 || !isset($_GET['id'])) {
@@ -16,8 +17,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 4 || !isset($_GET['i
     exit(json_encode(['error' => 'Unauthorized access.']));
 }
 
-$quiz_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
-$student_user_id = $_SESSION['user_id'];
+$quiz_id = (int) filter_var($_GET['id'], FILTER_VALIDATE_INT);
+$student_user_id = (int) $_SESSION['user_id'];
+
+// Only students assigned to this quiz may load it, and only while it is running.
+$quiz_config = require_eligible_quiz($pdo, $quiz_id, $student_user_id);
+if ($quiz_config['status_id'] != 3) {
+    json_fail(403, 'This exam is not in progress.');
+}
 
 try {
     $pdo->beginTransaction();
@@ -27,14 +34,6 @@ try {
     $stmt_check->execute([$quiz_id, $student_user_id]);
     $attempt = $stmt_check->fetch(PDO::FETCH_ASSOC);
 
-    // Get quiz configuration, especially the duration.
-    $quiz_config_stmt = $pdo->prepare("SELECT * FROM quizzes WHERE id = ?");
-    $quiz_config_stmt->execute([$quiz_id]);
-    $quiz_config = $quiz_config_stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$quiz_config) {
-        throw new Exception("Quiz configuration not found.");
-    }
     $duration_minutes = $quiz_config['duration_minutes'];
 
     $attempt_id = null;

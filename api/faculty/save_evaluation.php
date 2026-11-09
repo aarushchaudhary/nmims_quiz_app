@@ -27,7 +27,11 @@ try {
     $pdo->beginTransaction();
 
     // 1. Get the old score and attempt ID from the answer.
-    $stmt_old = $pdo->prepare('SELECT attempt_id, score_awarded FROM student_answers WHERE id = ?');
+    $stmt_old = $pdo->prepare(
+        'SELECT sa.attempt_id, sa.score_awarded, q.points
+         FROM student_answers sa JOIN questions q ON q.id = sa.question_id
+         WHERE sa.id = ?'
+    );
     $stmt_old->execute([$answer_id]);
     $answer_data = $stmt_old->fetch();
     if (!$answer_data) {
@@ -38,9 +42,14 @@ try {
     $old_score  = $answer_data['score_awarded'] ?? 0;
 
     // SECURITY FIX #7: Ownership check — attempt must belong to a quiz owned by this faculty.
-    // SECURITY-TODO(#8): score bounds are not clamped here.
     $faculty_id = (int) $_SESSION['user_id'];
     require_owned_attempt_as_faculty($pdo, $attempt_id, $faculty_id);
+
+    // Same bounds as the form: 0 to the question's points.
+    if ($score < 0 || $score > $answer_data['points']) {
+        $pdo->rollBack();
+        json_fail(400, 'Score must be between 0 and ' . $answer_data['points'] . '.');
+    }
 
     // 2. Update the score for this specific answer
     $stmt_update_answer = $pdo->prepare("UPDATE student_answers SET score_awarded = ? WHERE id = ?");

@@ -9,7 +9,6 @@ require_once '../../config/database.php';
 require_once '../../config/authz.php';
 
 // --- Authorization & Input Check ---
-session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
     http_response_code(403);
     echo json_encode(['error' => 'Access denied.']);

@@ -6,6 +6,7 @@
  */
 session_start();
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 require_once '../../lib/vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -21,6 +22,9 @@ if (!isset($_GET['quiz_id']) || !filter_var($_GET['quiz_id'], FILTER_VALIDATE_IN
 }
 
 $quiz_id = $_GET['quiz_id'];
+if (!head_can_view_quiz($pdo, (int) $quiz_id)) {
+    exit('Access Denied.');
+}
 
 try {
     // --- Fetch Data (without faculty ID check) ---

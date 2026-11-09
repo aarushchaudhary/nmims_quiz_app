@@ -291,17 +291,17 @@ nmims_quiz_app/
    # Create a dedicated DB user (recommended)
    mysql -u root -p -e "
      CREATE DATABASE nmims_quiz_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-     CREATE USER 'nmims_quiz_app'@'127.0.0.1' IDENTIFIED BY '123456';
+     CREATE USER 'nmims_quiz_app'@'127.0.0.1' IDENTIFIED BY 'your-db-password';
      GRANT ALL PRIVILEGES ON nmims_quiz_app.* TO 'nmims_quiz_app'@'127.0.0.1';
    "
 
    # Import schema
-   mysql -h 127.0.0.1 -u nmims_quiz_app -p123456 nmims_quiz_app < schema.sql
+   mysql -h 127.0.0.1 -u nmims_quiz_app -p nmims_quiz_app < schema.sql
    ```
 
 5. **Start the server**
    ```bash
-   php -S localhost:8080 router.php
+   DB_PASS='your-db-password' php -S localhost:8080 router.php
    ```
 
 6. **Open the app**
@@ -317,8 +317,11 @@ define('DB_HOST', '127.0.0.1');
 define('DB_PORT', '3306');
 define('DB_NAME', 'nmims_quiz_app');
 define('DB_USER', 'nmims_quiz_app');
-define('DB_PASS', '123456');
+define('DB_PASS', getenv('DB_PASS') ?: '');   // set DB_PASS in the environment
 ```
+The password is never stored in the repo. Set `DB_PASS` in the environment of the
+PHP process (shell for `php -S`, `SetEnv DB_PASS ...` for Apache, `env[DB_PASS]` for PHP-FPM).
+The test suite reads the same variable: `DB_PASS='your-db-password' php tests/test.php`.
 
 ### Base URL (`config/base_url.php`)
 Automatically detects the server host and port — no manual changes needed for localhost. For production, update the `get_base_url()` function to return your domain.

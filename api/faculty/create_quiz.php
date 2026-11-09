@@ -5,7 +5,6 @@ header('Content-Type: application/json');
 require_once '../../config/database.php';
 
 // --- Authorization Check ---
-session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);

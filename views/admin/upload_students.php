@@ -20,6 +20,15 @@
         if (isset($_GET['success'])) { echo '<div class="message-box success-message">✅ ' . htmlspecialchars($_GET['message']) . '</div>'; }
         if (isset($_GET['error'])) { echo '<div class="message-box error-message">❌ ' . htmlspecialchars($_GET['message']) . '</div>'; }
         
+        if (!empty($_SESSION['upload_passwords'])) {
+            echo '<div class="message-box warning-message"><h4>Temporary passwords (shown only once — copy them now)</h4>'
+               . '<table class="data-table"><tr><th>Name</th><th>Email</th><th>SAP ID</th><th>Temporary password</th></tr>';
+            foreach ($_SESSION['upload_passwords'] as $row) {
+                echo '<tr><td>' . implode('</td><td>', array_map('htmlspecialchars', $row)) . '</td></tr>';
+            }
+            echo '</table></div>';
+            unset($_SESSION['upload_passwords']);
+        }
         if (isset($_SESSION['upload_errors']) && !empty($_SESSION['upload_errors'])) {
             echo '<div class="message-box warning-message"><h4>⚠️ Upload Warnings:</h4><ul>';
             foreach ($_SESSION['upload_errors'] as $error) {

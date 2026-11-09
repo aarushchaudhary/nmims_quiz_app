@@ -106,7 +106,7 @@ class AdminTest
         assert_true($school !== false, 'School should exist in DB after creation');
 
         // delete_school uses GET ?id=  (no courses attached → will succeed)
-        $delRes = $this->http->get('api/admin/delete_school.php', ['id' => $school['id']]);
+        $delRes = $this->http->post('api/admin/delete_school.php', ['id' => $school['id']]);
         assert_in($delRes['status'], [302, 200], 'delete_school should redirect or return 200');
 
         $stmt->execute([$unique]);
@@ -142,7 +142,7 @@ class AdminTest
         assert_true($course !== false, 'Course should exist in DB after creation');
 
         // delete_course uses GET ?id=
-        $delRes = $this->http->get('api/admin/delete_course.php', ['id' => $course['id']]);
+        $delRes = $this->http->post('api/admin/delete_course.php', ['id' => $course['id']]);
         assert_in($delRes['status'], [302, 200], 'delete_course should redirect or return 200');
 
         $stmt->execute([$unique]);
@@ -188,7 +188,7 @@ class AdminTest
         // the endpoint actually deletes a batch (section) row. So we just verify the class exists
         // and clean up directly — the endpoint name is misleading but that's the app's design.
         // Instead call delete_batch which uses GET ?id= and deletes from `classes`
-        $delRes = $this->http->get('api/admin/delete_batch.php', ['id' => $class['id']]);
+        $delRes = $this->http->post('api/admin/delete_batch.php', ['id' => $class['id']]);
         assert_in($delRes['status'], [302, 200], 'delete_batch should redirect or return 200');
 
         $stmt->execute([$course_id]);
@@ -219,7 +219,7 @@ class AdminTest
         assert_true($batch !== false, 'Section/batch should exist in DB after add_class');
 
         // delete_class.php uses GET ?id= and deletes from batches
-        $delRes = $this->http->get('api/admin/delete_class.php', ['id' => $batch['id']]);
+        $delRes = $this->http->post('api/admin/delete_class.php', ['id' => $batch['id']]);
         assert_in($delRes['status'], [302, 200], 'delete_class should redirect or return 200');
 
         $stmt->execute([$sectionName, $class_id]);
@@ -245,7 +245,7 @@ class AdminTest
         assert_true($elective !== false, 'Elective should exist in DB');
 
         // delete_elective uses GET ?id=
-        $delRes = $this->http->get('api/admin/delete_elective.php', ['id' => $elective['id']]);
+        $delRes = $this->http->post('api/admin/delete_elective.php', ['id' => $elective['id']]);
         assert_in($delRes['status'], [302, 200], 'delete_elective should redirect or return 200');
 
         $stmt->execute([$unique]);
@@ -274,7 +274,7 @@ class AdminTest
         assert_true($group !== false, 'Re-exam group should exist in DB');
 
         // delete_re_exam_group uses GET ?id=
-        $delRes = $this->http->get('api/admin/delete_re_exam_group.php', ['id' => $group['id']]);
+        $delRes = $this->http->post('api/admin/delete_re_exam_group.php', ['id' => $group['id']]);
         assert_in($delRes['status'], [302, 200], 'delete_re_exam_group should redirect or return 200');
 
         $stmt->execute([$unique]);

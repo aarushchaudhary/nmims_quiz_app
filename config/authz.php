@@ -151,3 +151,69 @@ function require_own_attempt(
     }
     return $row;
 }
+
+
+/**
+ * SQL condition: student row `s` is assigned to quiz row `q` — manually, by class
+ * or batch SAP range, by elective, or by re-exam group.  The one copy of this rule;
+ * used by the student dashboard and require_eligible_quiz().
+ */
+function student_quiz_eligibility_sql(): string
+{
+    return "(
+        EXISTS (SELECT 1 FROM quiz_manual_students qms
+                WHERE qms.quiz_id = q.id AND qms.student_id = s.user_id)
+        OR EXISTS (SELECT 1 FROM quiz_classes qc JOIN classes c ON c.id = qc.class_id
+                   WHERE qc.quiz_id = q.id
+                     AND c.course_id = s.course_id AND c.graduation_year = s.graduation_year
+                     AND CAST(s.sap_id AS UNSIGNED) BETWEEN c.sap_id_range_start AND c.sap_id_range_end)
+        OR EXISTS (SELECT 1 FROM quiz_batches qb JOIN batches b ON b.id = qb.batch_id
+                   JOIN classes bc ON bc.id = b.class_id
+                   WHERE qb.quiz_id = q.id
+                     AND bc.course_id = s.course_id AND bc.graduation_year = s.graduation_year
+                     AND CAST(s.sap_id AS UNSIGNED) BETWEEN b.sap_id_range_start AND b.sap_id_range_end)
+        OR EXISTS (SELECT 1 FROM quiz_electives qe
+                   JOIN elective_students els ON els.elective_id = qe.elective_id
+                   WHERE qe.quiz_id = q.id AND els.student_id = s.user_id)
+        OR EXISTS (SELECT 1 FROM quiz_re_exam_groups qrg
+                   JOIN re_exam_group_students rgs ON rgs.group_id = qrg.group_id
+                   WHERE qrg.quiz_id = q.id AND rgs.student_id = s.user_id)
+    )";
+}
+
+/**
+ * Returns the quiz row if the student is assigned to it.
+ * 403s (JSON) or redirects to the dashboard (HTML) otherwise.
+ */
+function require_eligible_quiz(PDO $pdo, int $quiz_id, int $student_id, bool $json = true): array
+{
+    $stmt = $pdo->prepare(
+        'SELECT q.* FROM quizzes q JOIN students s ON s.user_id = ?
+         WHERE q.id = ? AND ' . student_quiz_eligibility_sql()
+    );
+    $stmt->execute([$student_id, $quiz_id]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        if ($json) {
+            json_fail(403, 'Not found or not authorized.');
+        }
+        redirect('views/student/dashboard.php?error=not_found');
+    }
+    return $row;
+}
+
+/** School heads (role 5) may only see quizzes of their own school; other staff are unrestricted. */
+function head_can_view_quiz(PDO $pdo, int $quiz_id): bool
+{
+    if (($_SESSION['role_id'] ?? null) != 5) {
+        return true;
+    }
+    $stmt = $pdo->prepare(
+        'SELECT 1 FROM quizzes q
+         JOIN courses c ON c.id = q.course_id
+         JOIN heads h ON h.school_id = c.school_id
+         WHERE q.id = ? AND h.user_id = ?'
+    );
+    $stmt->execute([$quiz_id, $_SESSION['user_id']]);
+    return (bool) $stmt->fetchColumn();
+}

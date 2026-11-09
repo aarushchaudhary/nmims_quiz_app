@@ -117,7 +117,7 @@
                     <td><?php echo htmlspecialchars($cls['course_name']); ?></td>
                     <td><?php echo htmlspecialchars($cls['graduation_year']); ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
-                        <a href="<?= get_base_url() ?>api/admin/delete_batch.php?id=<?php echo $cls['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this batch?')" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none;">Delete</a>
+                        <form method="post" action="<?= get_base_url() ?>api/admin/delete_batch.php" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this batch?')"><input type="hidden" name="id" value="<?php echo $cls['id']; ?>"><button type="submit" class="btn-delete" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none;">Delete</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>

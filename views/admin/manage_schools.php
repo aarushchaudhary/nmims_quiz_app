@@ -41,7 +41,7 @@
                 <tr>
                     <td><?php echo htmlspecialchars($school['name']); ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
-                        <a href="<?= get_base_url() ?>api/admin/delete_school.php?id=<?php echo $school['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this school? This might affect existing courses and students.')" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer;">Delete</a>
+                        <form method="post" action="<?= get_base_url() ?>api/admin/delete_school.php" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this school? This might affect existing courses and students.')"><input type="hidden" name="id" value="<?php echo $school['id']; ?>"><button type="submit" class="btn-delete" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer;">Delete</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>

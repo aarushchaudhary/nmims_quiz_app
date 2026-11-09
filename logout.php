@@ -12,6 +12,13 @@ if (session_status() == PHP_SESSION_NONE) {
 
 // 2. Unset all of the session variables.
 // This clears all data stored in the $_SESSION superglobal array.
+// Free the account so the next login is not reported as "logged in elsewhere".
+require_once __DIR__ . '/config/database.php';
+if (!empty($_SESSION['user_id'])) {
+    $pdo->prepare('UPDATE users SET active_session_id = NULL WHERE id = ? AND active_session_id = ?')
+        ->execute([$_SESSION['user_id'], session_id()]);
+}
+
 $_SESSION = array();
 
 // 3. If it's desired to kill the session, also delete the session cookie.

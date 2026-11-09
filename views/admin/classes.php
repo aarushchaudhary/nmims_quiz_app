@@ -132,7 +132,7 @@
                     <td><?php echo htmlspecialchars($batch['sap_id_range_start'] . ' - ' . $batch['sap_id_range_end']); ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
                         <a href="edit_class.php?id=<?php echo $batch['id']; ?>" class="btn-edit" style="background-color:#ffc107; color:black; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none; margin-right: 5px;">Edit</a>
-                        <a href="<?= get_base_url() ?>api/admin/delete_class.php?id=<?php echo $batch['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this section?')" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none;">Delete</a>
+                        <form method="post" action="<?= get_base_url() ?>api/admin/delete_class.php" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this section?')"><input type="hidden" name="id" value="<?php echo $batch['id']; ?>"><button type="submit" class="btn-delete" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none;">Delete</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>

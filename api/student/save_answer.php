@@ -60,6 +60,13 @@ try {
         exit(json_encode(['error' => 'Your exam session has been locked by the faculty.']));
     }
 
+    // Reject saves after this attempt's own deadline (30 s grace for network delay).
+    if ($attempt_info['attempt_end_time'] !== null
+        && strtotime($attempt_info['attempt_end_time']) + 30 < time()) {
+        http_response_code(403);
+        exit(json_encode(['error' => 'Time is up for this attempt. Your answer was not saved.']));
+    }
+
     // Check quiz is still in progress (status_id 3)
     $stmt_status = $pdo->prepare('SELECT status_id FROM quizzes WHERE id = ?');
     $stmt_status->execute([$attempt_info['quiz_id']]);
@@ -94,20 +101,15 @@ try {
 
     $selected_option_ids_json = json_encode(array_map('intval', $selected_option_ids));
 
-    // Upsert logic
-    $stmt_check = $pdo->prepare('SELECT id FROM student_answers WHERE attempt_id = ? AND question_id = ?');
-    $stmt_check->execute([$attempt_id, $question_id]);
-    $existing_answer = $stmt_check->fetch();
-
-    if ($existing_answer) {
-        $sql = 'UPDATE student_answers SET selected_option_ids = ?, answer_text = ?, time_spent_seconds = time_spent_seconds + ? WHERE id = ?';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$selected_option_ids_json, $answer_text, $time_spent, $existing_answer['id']]);
-    } else {
-        $sql = 'INSERT INTO student_answers (attempt_id, question_id, selected_option_ids, answer_text, time_spent_seconds) VALUES (?, ?, ?, ?, ?)';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$attempt_id, $question_id, $selected_option_ids_json, $answer_text, $time_spent]);
-    }
+    // One atomic upsert: UNIQUE(attempt_id, question_id) stops two saves at once creating two rows.
+    $stmt = $pdo->prepare(
+        'INSERT INTO student_answers (attempt_id, question_id, selected_option_ids, answer_text, time_spent_seconds)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE selected_option_ids = VALUES(selected_option_ids),
+                                 answer_text = VALUES(answer_text),
+                                 time_spent_seconds = time_spent_seconds + VALUES(time_spent_seconds)'
+    );
+    $stmt->execute([$attempt_id, $question_id, $selected_option_ids_json, $answer_text, $time_spent]);
 
     echo json_encode(['success' => true, 'message' => 'Answer saved.']);
 

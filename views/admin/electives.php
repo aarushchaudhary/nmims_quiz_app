@@ -52,7 +52,7 @@
                     <td><?php echo $elective['student_count']; ?></td>
                     <td class="action-buttons" style="flex-direction:row;">
                         <a href="manage_elective.php?id=<?php echo $elective['id']; ?>" class="btn-edit" style="background-color:#007bff; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none; margin-right: 5px;">Manage Students</a>
-                        <a href="<?= get_base_url() ?>api/admin/delete_elective.php?id=<?php echo $elective['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this elective?')" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none;">Delete</a>
+                        <form method="post" action="<?= get_base_url() ?>api/admin/delete_elective.php" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this elective?')"><input type="hidden" name="id" value="<?php echo $elective['id']; ?>"><button type="submit" class="btn-delete" style="background-color:#dc3545; color:white; border:none; padding: 8px 12px; font-size: 14px; border-radius: 6px; cursor:pointer; text-decoration:none;">Delete</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>

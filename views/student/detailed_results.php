@@ -53,6 +53,8 @@
 </div>
 
 <script>
+    // Question, option and answer text are shown as text, never as HTML.
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const BASE_URL = '<?= get_base_url() ?>';
 document.addEventListener('DOMContentLoaded', async function() {
     const attemptId = <?php echo json_encode($attempt_id); ?>;
@@ -118,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (item.question_type_id == 3) {
                 // Descriptive
                 const text = item.answer_text && item.answer_text.trim() !== ''
-                    ? item.answer_text
+                    ? esc(item.answer_text)
                     : '<em style="color:#999;">No answer provided.</em>';
                 answersHtml = `<div style="background:#f8f9fa; border-left:4px solid #adb5bd; padding:12px 16px; border-radius:4px; white-space:pre-wrap; font-family:monospace; font-size:14px;">${text}</div>`;
             } else {
@@ -132,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     else if (isSelected && !isCorrect) { bg = '#f8d7da'; border = '#dc3545'; icon = '✗ '; }
 
                     answersHtml += `<div style="padding:10px 14px; margin-bottom:6px; border-radius:6px; border:1px solid ${border}; background:${bg}; font-size:14px;">
-                        <span style="font-weight:bold;">${icon}</span>${option.option_text}
+                        <span style="font-weight:bold;">${icon}</span>${esc(option.option_text)}
                         ${isCorrect ? '<span style="float:right; font-size:12px; color:#28a745; font-weight:bold;">Correct Answer</span>' : ''}
                         ${isSelected && !isCorrect ? '<span style="float:right; font-size:12px; color:#dc3545; font-weight:bold;">Your Answer</span>' : ''}
                         ${isSelected && isCorrect ? '<span style="float:right; font-size:12px; color:#28a745; font-weight:bold;">Your Answer ✓</span>' : ''}
@@ -144,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             card.style = 'background:#fff; border:1px solid #e0e0e0; border-radius:10px; margin-bottom:20px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.05);';
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid #f0f0f0; background:#fafafa;">
-                    <span style="font-weight:700; font-size:15px; color:#333;">Q${displayIndex}. ${item.question_text}</span>
+                    <span style="font-weight:700; font-size:15px; color:#333;">Q${displayIndex}. ${esc(item.question_text)}</span>
                     <div style="display:flex; align-items:center; gap:12px; flex-shrink:0; margin-left:16px;">
                         <span style="font-size:13px; font-weight:bold; padding:4px 12px; border-radius:20px; background:${verdict.color}; color:#fff; white-space:nowrap;">${verdict.label}</span>
                         <span style="font-size:13px; color:#555; white-space:nowrap;">Marks: ${marksHtml}</span>

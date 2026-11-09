@@ -4,7 +4,6 @@
 require_once '../../config/database.php';
 
 // --- Authorization Check ---
-session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
     redirect('login.php?error=unauthorized');
     exit();

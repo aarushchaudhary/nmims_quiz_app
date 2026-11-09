@@ -5,7 +5,8 @@
  */
 header('Content-Type: application/json');
 if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+    // SameSite=Lax: the browser will not send this cookie on cross-site POSTs (CSRF).
+    session_start(['cookie_samesite' => 'Lax']);
 }
 require_once '../config/database.php';
 
@@ -16,7 +17,7 @@ $force_login = $data['force'] ?? false;
 
 // Fetch user data
 // Fetch user data
-$sql_user = "SELECT u.id, u.password_hash, u.active_session_id, u.role_id, s.sap_id 
+$sql_user = "SELECT u.id, u.password_hash, u.active_session_id, u.role_id, u.must_change_password, s.sap_id 
              FROM users u 
              LEFT JOIN students s ON u.id = s.user_id 
              WHERE u.email = :email AND u.is_active = 1";
@@ -63,10 +64,8 @@ $_SESSION['role_id'] = $user['role_id'];
 $_SESSION['full_name'] = $details['full_name'];
 $_SESSION['role_name'] = $details['role_name'];
 
-if ($user['role_id'] == 4 && $password === $user['sap_id']) {
-    $_SESSION['force_password_change'] = true;
-} else {
-    $_SESSION['force_password_change'] = false;
-}
+// Temporary passwords must be changed; so must the old SAP-ID default on older accounts.
+$_SESSION['force_password_change'] = $user['must_change_password']
+    || ($user['role_id'] == 4 && $password === $user['sap_id']);
 
 echo json_encode(['status' => 'success', 'message' => 'Login successful.']);

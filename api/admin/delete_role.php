@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) { exit('Access Denied'); }
 
-$role_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+$role_id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 
 if (!$role_id) {
     redirect('views/admin/manage_roles.php?error=Invalid+ID.');

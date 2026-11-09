@@ -30,13 +30,14 @@ try {
     $highestRow = $sheet->getHighestRow();
 
     // --- Prepare reusable statements for performance ---
-    $stmt_user = $pdo->prepare("INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)");
+    $stmt_user = $pdo->prepare("INSERT INTO users (email, password_hash, role_id, must_change_password) VALUES (?, ?, ?, 1)");
     $stmt_student = $pdo->prepare("INSERT INTO students (user_id, name, sap_id, course_id, graduation_year, batch) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt_course = $pdo->prepare("SELECT id, duration_years FROM courses WHERE code = ?");
 
     $successCount = 0;
     $errorCount = 0;
     $errorMessages = [];
+    $newPasswords = []; // shown once to the admin after the upload
 
     // --- Loop from row 2 to skip the header ---
     for ($row = 2; $row <= $highestRow; $row++) {
@@ -83,7 +84,9 @@ try {
         $graduation_year = $end_year;
         $batch = $start_year . '-' . $end_year;
         
-        $password_hash = password_hash($sap_id, PASSWORD_DEFAULT);
+        // Random temporary password (not the guessable SAP ID); must be changed at first login.
+        $temp_password = bin2hex(random_bytes(4));
+        $password_hash = password_hash($temp_password, PASSWORD_DEFAULT);
         
         try {
             // Create user
@@ -93,6 +96,7 @@ try {
             // Create student
             $stmt_student->execute([$new_user_id, $full_name, $sap_id, $course_id, $graduation_year, $batch]);
             $successCount++;
+            $newPasswords[] = [$full_name, $email, $sap_id, $temp_password];
         } catch (Exception $e) {
             $errorCount++;
             $errorMessages[] = "Skipping row $row for user '$full_name': Email or SAP ID already exists in system.";
@@ -107,6 +111,7 @@ try {
         $final_message .= " $errorCount rows were skipped due to errors.";
     }
     $_SESSION['upload_errors'] = $errorMessages;
+    $_SESSION['upload_passwords'] = $newPasswords;
 
     redirect('views/admin/upload_students.php?success=true&message=' . urlencode($final_message));
 

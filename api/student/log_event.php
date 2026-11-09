@@ -6,6 +6,7 @@
 header('Content-Type: application/json');
 session_start();
 require_once '../../config/database.php';
+require_once '../../config/authz.php';
 
 // --- Authorization & Request Method Check ---
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['user_id']) || $_SESSION['role_id'] != 4) {
@@ -14,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['user_id']) || $_S
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
-$attempt_id = $data['attempt_id'] ?? null;
+$attempt_id = filter_var($data['attempt_id'] ?? null, FILTER_VALIDATE_INT);
 $event_type = $data['event_type'] ?? 'Unknown';
 $description = $data['description'] ?? '';
 
@@ -22,6 +23,9 @@ if (!$attempt_id) {
     http_response_code(400);
     exit(json_encode(['error' => 'Missing attempt ID.']));
 }
+
+// Students may only log events against their own attempt.
+require_own_attempt($pdo, $attempt_id, (int) $_SESSION['user_id']);
 
 try {
     $sql = "INSERT INTO event_logs (attempt_id, user_id, event_type, description, ip_address) 

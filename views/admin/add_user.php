@@ -60,7 +60,7 @@
                         <label>SAP ID (11 Digits)</label>
                         <input type="text" name="sap_id" id="sap_id" minlength="11" maxlength="11" pattern="\d{11}" title="Must be exactly 11 digits">
                         <div id="sap-preview" style="margin-top: 8px; font-size: 0.9em; display: none;"></div>
-                        <small style="color: #666; font-size: 0.8em; margin-top: 5px; display: block;">Note: SAP ID will be used as the default password. School, Course, and Batch will be assigned automatically based on SAP ID.</small>
+                        <small style="color: #666; font-size: 0.8em; margin-top: 5px; display: block;">Note: a random temporary password will be generated and shown once after saving. School, Course, and Batch will be assigned automatically based on SAP ID.</small>
                     </div>
                 </div>
             </div>

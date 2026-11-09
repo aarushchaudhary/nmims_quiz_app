@@ -21,7 +21,8 @@ $is_visiting = isset($_POST['is_visiting']) ? 1 : 0;
 $sap_id = $_POST['sap_id'] ?? '';
 
 if ($role_id == 4) {
-    $password = $sap_id;
+    // Random temporary password (not the guessable SAP ID); shown once to the admin.
+    $password = bin2hex(random_bytes(4));
 }
 
 // --- Validation ---
@@ -77,9 +78,9 @@ try {
     $pdo->beginTransaction();
 
     // 1. Insert into the main 'users' table
-    $sql_user = "INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)";
+    $sql_user = "INSERT INTO users (email, password_hash, role_id, must_change_password) VALUES (?, ?, ?, ?)";
     $stmt_user = $pdo->prepare($sql_user);
-    $stmt_user->execute([$email, $password_hash, $role_id]);
+    $stmt_user->execute([$email, $password_hash, $role_id, $role_id == 4 ? 1 : 0]);
     $new_user_id = $pdo->lastInsertId();
 
     // 2. Insert into the appropriate details table based on the role
@@ -112,6 +113,9 @@ try {
     }
 
     $pdo->commit();
+    if ($role_id == 4) {
+        $_SESSION['new_user_password'] = ['email' => $email, 'password' => $password];
+    }
     redirect('views/admin/user_management.php?success=User+created+successfully.');
 
 } catch (PDOException $e) {

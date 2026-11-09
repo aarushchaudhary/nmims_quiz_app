@@ -3,6 +3,7 @@
   
   require_once '../../assets/templates/header.php';
   require_once '../../config/database.php';
+  require_once '../../config/authz.php';
 
   // --- Authorization & Input Check ---
   if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 4) {
@@ -17,15 +18,8 @@
   $quiz_id = $_GET['id'];
   $student_user_id = $_SESSION['user_id'];
 
-  // --- Fetch Quiz Details ---
-  $stmt_quiz = $pdo->prepare("SELECT title FROM quizzes WHERE id = ?");
-  $stmt_quiz->execute([$quiz_id]);
-  $quiz = $stmt_quiz->fetch();
-
-  if (!$quiz) {
-      header('Location: dashboard.php?error=quiz_not_found');
-      exit();
-  }
+  // --- Fetch Quiz Details (only quizzes this student is assigned to) ---
+  $quiz = require_eligible_quiz($pdo, (int) $quiz_id, (int) $student_user_id, false);
 
   // Register student in the lobby
   $lobby_sql = "INSERT IGNORE INTO quiz_lobby (quiz_id, student_id) VALUES (?, ?)";

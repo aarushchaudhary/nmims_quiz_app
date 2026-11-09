@@ -48,7 +48,8 @@ define("DB_HOST", "127.0.0.1");
 define("DB_PORT", "3306");
 define("DB_NAME", "nmims_quiz_app");
 define("DB_USER", "nmims_quiz_app");
-define("DB_PASS", "123456");
+// Password comes from the environment, never from the repo (e.g. DB_PASS=... php -S ...).
+define("DB_PASS", getenv("DB_PASS") ?: "");
 
 // --- Data Source Name (DSN) ---
 $dsn =
@@ -82,4 +83,18 @@ try {
             "Database connection failed. Please check server configuration.",
     ]);
     exit();
+}
+
+// --- One active session per user ---
+// Every page and API loads this file, so the check lives here. The newest login
+// owns the account (users.active_session_id); any older session is treated as logged out.
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    session_start();
+}
+if (!empty($_SESSION['user_id'])) {
+    $stmt_session = $pdo->prepare("SELECT active_session_id FROM users WHERE id = ?");
+    $stmt_session->execute([$_SESSION['user_id']]);
+    if ($stmt_session->fetchColumn() !== session_id()) {
+        $_SESSION = [];
+    }
 }

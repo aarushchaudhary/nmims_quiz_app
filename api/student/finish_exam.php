@@ -33,16 +33,15 @@ try {
     $pdo->beginTransaction();
 
     // SECURITY FIX #3: Ownership check — attempt must belong to this student.
-    $attempt_row = require_own_attempt($pdo, $attempt_id, $student_id);
+    require_own_attempt($pdo, $attempt_id, $student_id);
 
-    // Idempotency guard: if already submitted, return success without re-grading.
-    if ($attempt_row['submitted_at'] !== null) {
+    // Lock the attempt row: a second submit waits here, then sees submitted_at and stops.
+    $stmt_lock = $pdo->prepare('SELECT submitted_at FROM student_attempts WHERE id = ? FOR UPDATE');
+    $stmt_lock->execute([$attempt_id]);
+    if ($stmt_lock->fetchColumn() !== null) {
         $pdo->rollBack();
         exit(json_encode(['success' => true]));
     }
-
-    // SECURITY-TODO(#25): event_logs entries are client-supplied and forgeable;
-    // log_event.php needs an ownership check before this threshold can be fully trusted.
 
     // Determine disqualification server-side by counting logged violations.
     $stmt_violations = $pdo->prepare(
@@ -64,7 +63,7 @@ try {
     } else {
         // --- Handle Normal Exam Finish ---
 
-        // SECURITY-TODO(#10): attempt_end_time is not enforced here.
+        // The deadline is enforced in save_answer.php, so late answers never reach grading.
 
         // 0. Ensure all assigned questions exist in student_answers so missing ones
         //    are properly categorised.
@@ -82,7 +81,7 @@ try {
         $answered_ids = $stmt_answered_ids->fetchAll(PDO::FETCH_COLUMN, 0);
 
         $stmt_insert_blank = $pdo->prepare(
-            "INSERT INTO student_answers (attempt_id, question_id, selected_option_ids, answer_text, time_spent_seconds, is_correct)
+            "INSERT IGNORE INTO student_answers (attempt_id, question_id, selected_option_ids, answer_text, time_spent_seconds, is_correct)
              VALUES (?, ?, '[]', '', 0, null)"
         );
 
@@ -111,6 +110,15 @@ try {
         $stmt_answers->execute([$attempt_id]);
         $student_answers = $stmt_answers->fetchAll();
 
+        // Correct option ids for every answered question, in one query.
+        $stmt_correct = $pdo->prepare(
+            'SELECT o.question_id, o.id FROM options o
+             JOIN student_answers sa ON sa.question_id = o.question_id
+             WHERE sa.attempt_id = ? AND o.is_correct = 1'
+        );
+        $stmt_correct->execute([$attempt_id]);
+        $correct_by_question = $stmt_correct->fetchAll(PDO::FETCH_GROUP | PDO::FETCH_COLUMN);
+
         $total_score = 0;
         $stmt_update_answer = $pdo->prepare(
             'UPDATE student_answers SET is_correct = ? WHERE id = ?'
@@ -122,11 +130,7 @@ try {
             $is_correct_value = null;
 
             if ($answer['question_type_id'] == 1 || $answer['question_type_id'] == 2) {
-                $stmt_correct = $pdo->prepare(
-                    'SELECT id FROM options WHERE question_id = ? AND is_correct = 1'
-                );
-                $stmt_correct->execute([$question_id]);
-                $correct_ids = $stmt_correct->fetchAll(PDO::FETCH_COLUMN, 0);
+                $correct_ids = $correct_by_question[$question_id] ?? [];
                 sort($selected_ids);
                 sort($correct_ids);
 
@@ -139,7 +143,8 @@ try {
                     if ($answer['question_type_id'] == 2) {
                         $correct_selections = array_intersect($selected_ids, $correct_ids);
 
-                        if (!empty($correct_selections)) {
+                        // Partial credit only if every picked option is correct; one wrong pick makes it wrong.
+                        if (!empty($correct_selections) && !array_diff($selected_ids, $correct_ids)) {
                             $is_correct_value = 2; // Partially correct
                             $partial_points   = ($answer['points'] / count($correct_ids)) * count($correct_selections);
                             $total_score     += $partial_points;

@@ -2,7 +2,7 @@
  * script.js
  * Merged file containing:
  * - Login page logic (from login.js)
- * - Exam page logic (from exam_logic.js)
+ * - Exam page logic
  * Both modules are independent and wrapped in DOMContentLoaded listeners.
  */
 
@@ -268,7 +268,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const label = document.createElement('label');
                 label.className = 'option-label';
                 const isChecked = savedAnswer.selectedOptionIds.includes(String(opt.id)) ? 'checked' : '';
-                label.innerHTML = `<input type="${inputType}" name="option" value="${opt.id}" ${isChecked}> <span>${opt.option_text}</span>`;
+                label.innerHTML = `<input type="${inputType}" name="option" value="${opt.id}" ${isChecked}> <span></span>`;
+                label.querySelector('span').textContent = opt.option_text; // text, not HTML: "a < b" must show as typed
                 ui.optionsGrid.appendChild(label);
             });
         }

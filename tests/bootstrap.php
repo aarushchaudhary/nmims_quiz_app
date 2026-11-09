@@ -15,7 +15,7 @@ define('TEST_DB_HOST', '127.0.0.1');
 define('TEST_DB_PORT', '3306');
 define('TEST_DB_NAME', 'nmims_quiz_app');
 define('TEST_DB_USER', 'nmims_quiz_app');
-define('TEST_DB_PASS', '123456');
+define('TEST_DB_PASS', getenv('DB_PASS') ?: '');
 
 function get_test_pdo(): PDO
 {
@@ -225,6 +225,10 @@ function bootstrap_setup(): void
                         60, 3, 1, 0, 0)");
     $quiz_b_id = (int)$pdo->lastInsertId();
     $GLOBALS['TEST']['quiz_b_id'] = $quiz_b_id;
+
+    // Assign both quizzes to TEST_CLASS so the test students are eligible to take them.
+    $pdo->exec("INSERT INTO quiz_classes (quiz_id, class_id)
+                VALUES ($quiz_id, {$GLOBALS['TEST']['class_id']}), ($quiz_b_id, {$GLOBALS['TEST']['class_id']})");
 
     // Question for quiz B (needed so save_answer cross-quiz denial has a real question ID)
     $pdo->exec("INSERT INTO questions (quiz_id, question_type_id, difficulty_id, question_text, points)

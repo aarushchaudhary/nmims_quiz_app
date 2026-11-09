@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) { exit('Access Denied'); }
 
-$course_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+$course_id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 
 if (!$course_id) {
     redirect('views/admin/manage_courses.php?error=Invalid+ID.');

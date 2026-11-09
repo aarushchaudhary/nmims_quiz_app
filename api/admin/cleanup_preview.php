@@ -1,6 +1,5 @@
 <?php
 require_once '../../config/database.php';
-session_start();
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
     http_response_code(403);

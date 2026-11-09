@@ -1,6 +1,6 @@
 <?php
+session_start(['cookie_samesite' => 'Lax']); // before database.php, so the regenerated cookie keeps SameSite
 require_once '../../config/database.php';
-session_start();
 
 header('Content-Type: application/json');
 
@@ -66,14 +66,17 @@ try {
 
     $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
-    $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
-    $stmt->execute([$hashed_password, $_SESSION['user_id']]);
+    // Regenerate session ID to prevent session fixation after a credential change,
+    // and store the new ID so the single-session check keeps this login valid.
+    session_regenerate_id(true);
+
+    $stmt = $pdo->prepare(
+        "UPDATE users SET password_hash = ?, must_change_password = 0, active_session_id = ? WHERE id = ?"
+    );
+    $stmt->execute([$hashed_password, session_id(), $_SESSION['user_id']]);
 
     // Clear the force flag if it existed
     $_SESSION['force_password_change'] = false;
-
-    // Regenerate session ID to prevent session fixation after a credential change
-    session_regenerate_id(true);
 
     echo json_encode(['success' => true]);
 

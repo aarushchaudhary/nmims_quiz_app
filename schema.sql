@@ -89,6 +89,7 @@ CREATE TABLE `users` (
   `password_hash`     VARCHAR(255) NOT NULL,
   `active_session_id` VARCHAR(255) DEFAULT NULL,
   `role_id`           INT          NOT NULL,
+  `must_change_password` TINYINT(1) NOT NULL DEFAULT 0,
   `is_active`         TINYINT(1)   NOT NULL DEFAULT 1,
   `created_at`        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -311,6 +312,7 @@ CREATE TABLE `student_answers` (
   `is_correct`          TINYINT(1),
   `score_awarded`       DECIMAL(5,2),
   `time_spent_seconds`  INT,
+  UNIQUE (`attempt_id`, `question_id`),
   FOREIGN KEY (`attempt_id`)  REFERENCES `student_attempts`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`question_id`) REFERENCES `questions`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

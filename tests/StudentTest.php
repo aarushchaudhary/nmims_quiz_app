@@ -58,6 +58,8 @@ class StudentTest
                 fn() => $this->testGetDetailedResults()),
             test('Student: fetch_exam_questions returns already-submitted error on re-attempt',
                 fn() => $this->testFetchAlreadySubmitted()),
+            test('Student: finish_exam grades MCQ/MSQ correctly (partial, select-all, negative marks)',
+                fn() => $this->testGradingScores()),
         ];
     }
 
@@ -222,6 +224,72 @@ class StudentTest
         assert_in($res['status'], [200, 500], 'Re-fetching a submitted exam should return 200 or 500');
         if ($res['status'] === 500) {
             assert_key($res['json'], 'error', 'Should contain an error message');
+        }
+    }
+
+    /**
+     * Grading regression: a known answer set must give a known total.
+     * MCQ right +2, MCQ wrong -0.25, MSQ 1-of-2 right +2, MSQ "select all" -0.5
+     * (wrong, not full marks), MSQ exact +4, unanswered 0  =>  7.25
+     */
+    private function testGradingScores(): void
+    {
+        $pdo = get_test_pdo();
+        $T   = $GLOBALS['TEST'];
+        $pdo->exec("INSERT INTO quizzes
+                        (title, faculty_id, course_id, start_time, end_time, duration_minutes, status_id,
+                         config_easy_count, config_medium_count, config_hard_count,
+                         enable_negative_marking, negative_marks_mcq, negative_marks_msq)
+                    VALUES ('TEST_QUIZ', {$T['faculty_user_id']}, {$T['sap_course_id']},
+                            DATE_SUB(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 50 MINUTE),
+                            60, 3, 0, 0, 0, 1, 0.25, 0.5)");
+        $quiz_id = (int) $pdo->lastInsertId();
+
+        // [type (1=MCQ, 2=MSQ), points, which options are correct, option indexes picked (null = unanswered)]
+        $spec = [
+            [1, 2, [1, 0, 0, 0], [0]],
+            [1, 2, [1, 0, 0, 0], [1]],
+            [2, 4, [1, 1, 0, 0], [0]],
+            [2, 4, [1, 1, 0, 0], [0, 1, 2, 3]],
+            [2, 4, [1, 1, 0, 0], [0, 1]],
+            [1, 2, [1, 0, 0, 0], null],
+        ];
+        $questions = [];
+        $answers   = [];
+        foreach ($spec as [$type, $points, $correct, $picks]) {
+            $pdo->prepare('INSERT INTO questions (quiz_id, question_type_id, difficulty_id, question_text, points)
+                           VALUES (?, ?, 1, ?, ?)')->execute([$quiz_id, $type, 'TEST grading question', $points]);
+            $qid  = (int) $pdo->lastInsertId();
+            $oids = [];
+            foreach ($correct as $i => $is_correct) {
+                $pdo->prepare('INSERT INTO options (question_id, option_text, is_correct) VALUES (?, ?, ?)')
+                    ->execute([$qid, "option $i", $is_correct]);
+                $oids[] = (int) $pdo->lastInsertId();
+            }
+            $questions[] = ['id' => $qid];
+            if ($picks !== null) {
+                $answers[$qid] = array_map(fn($i) => $oids[$i], $picks);
+            }
+        }
+        $pdo->prepare('INSERT INTO student_attempts (quiz_id, student_id, attempt_end_time, questions_json)
+                       VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR), ?)')
+            ->execute([$quiz_id, $T['student_user_id'], json_encode($questions)]);
+        $attempt_id = (int) $pdo->lastInsertId();
+        foreach ($answers as $qid => $picked) {
+            $pdo->prepare('INSERT INTO student_answers (attempt_id, question_id, selected_option_ids, time_spent_seconds)
+                           VALUES (?, ?, ?, 0)')->execute([$attempt_id, $qid, json_encode($picked)]);
+        }
+
+        try {
+            $this->loginAsStudent();
+            $res = $this->http->postJson('api/student/finish_exam.php', ['attempt_id' => $attempt_id]);
+            assert_eq($res['status'], 200, 'finish_exam should return 200');
+            $stmt = $pdo->prepare('SELECT total_score FROM student_attempts WHERE id = ?');
+            $stmt->execute([$attempt_id]);
+            assert_eq((float) $stmt->fetchColumn(), 7.25, 'total_score for the known answer set');
+        } finally {
+            $pdo->prepare('DELETE FROM student_attempts WHERE id = ?')->execute([$attempt_id]); // cascades answers
+            $pdo->prepare('DELETE FROM quizzes WHERE id = ?')->execute([$quiz_id]);             // cascades questions, options
         }
     }
 }
