@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const diffSeconds = Math.round((new Date(row.submitted_at.replace(' ', 'T')+'Z') - new Date(row.started_at.replace(' ', 'T')+'Z')) / 1000);
                         timeTaken = `${Math.floor(diffSeconds / 60)}m ${diffSeconds % 60}s`;
                     }
-                    tr.innerHTML = `<td>${row.student_name ?? 'N/A'}</td><td>${row.sap_id ?? 'N/A'}</td><td>${parseFloat(row.total_score).toFixed(2)}</td><td>${timeTaken}</td><td>${row.is_disqualified ? 'Disqualified' : 'Completed'}</td>`;
+                    tr.innerHTML = `<td>${row.student_name ?? 'N/A'}</td><td>${row.sap_id ?? 'N/A'}</td><td>${row.total_score === null ? '—' : parseFloat(row.total_score).toFixed(2)}</td><td>${timeTaken}</td><td>${row.status}</td>`;
                     tableBody.appendChild(tr);
                 });
             }

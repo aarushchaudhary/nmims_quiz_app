@@ -142,6 +142,8 @@ class SecurityTest
                 fn() => $this->testStaleSessionRejected()),
             test('Security: save_answer denied after the attempt deadline',
                 fn() => $this->testSaveAfterDeadlineDenied()),
+            test('Security: student Excel export refused until results are published',
+                fn() => $this->testStudentExportNeedsPublishedResults()),
             test('Security: 5 wrong passwords lock the account, even for the right password',
                 fn() => $this->testLoginLockout()),
             test('Security: user who must change password is refused by other APIs',
@@ -509,6 +511,33 @@ class SecurityTest
         assert_eq($res['status'], 403, 'save_answer must be denied after the deadline');
     }
 
+    private function testStudentExportNeedsPublishedResults(): void
+    {
+        $T   = $GLOBALS['TEST'];
+        $pdo = get_test_pdo();
+        $pdo->exec("INSERT INTO quizzes
+                        (title, faculty_id, course_id, start_time, end_time, duration_minutes, status_id,
+                         config_easy_count, config_medium_count, config_hard_count, show_results_immediately)
+                    VALUES ('TEST_QUIZ', {$T['faculty_user_id']}, {$T['sap_course_id']},
+                            DATE_SUB(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 50 MINUTE),
+                            60, 4, 0, 0, 0, 0)");
+        $quiz_id = (int) $pdo->lastInsertId();
+        $pdo->prepare('INSERT INTO student_attempts (quiz_id, student_id, total_score, submitted_at) VALUES (?, ?, 4, NOW())')
+            ->execute([$quiz_id, $T['student_user_id']]);
+        $attempt_id = (int) $pdo->lastInsertId();
+        try {
+            $this->loginAsStudent();
+            $res = $this->http->get('api/student/export_student_results.php', ['attempt_id' => $attempt_id]);
+            assert_true(str_contains($res['body'], 'not available'), 'Unpublished results must not be exported');
+
+            $pdo->prepare('UPDATE quizzes SET show_results_immediately = 1 WHERE id = ?')->execute([$quiz_id]);
+            $res = $this->http->get('api/student/export_student_results.php', ['attempt_id' => $attempt_id]);
+            assert_true(str_contains($res['headers'], 'spreadsheetml'), 'Published results should download as .xlsx');
+        } finally {
+            $pdo->prepare('DELETE FROM quizzes WHERE id = ?')->execute([$quiz_id]); // cascades the attempt
+        }
+    }
+
     private function testLoginLockout(): void
     {
         $T   = $GLOBALS['TEST'];
@@ -521,16 +550,23 @@ class SecurityTest
             }
             $res = $this->http->postJson('api/auth.php',
                 ['email' => $T['student_b_email'], 'password' => $T['student_b_password'], 'force' => true]);
-            assert_eq($res['status'], 429, 'Locked account must refuse even the right password');
+            assert_eq($res['status'], 429, 'Locked machine must be refused even with the right password');
+
+            // The lock belongs to this machine only: the owner logging in from another IP is not blocked.
+            $pdo->prepare('UPDATE login_failures SET ip_address = ? WHERE email = ?')->execute(['10.99.99.99', $T['student_b_email']]);
+            $res = $this->http->postJson('api/auth.php',
+                ['email' => $T['student_b_email'], 'password' => $T['student_b_password'], 'force' => true]);
+            assert_eq($res['status'], 200, 'A lock from another machine must not block this one');
         } finally {
-            $pdo->prepare('UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = ?')
-                ->execute([$T['student_b_user_id']]);
+            $pdo->prepare('DELETE FROM login_failures WHERE email = ?')->execute([$T['student_b_email']]);
         }
-        // Unlocked again: the right password works and resets the counter.
+        // A correct login clears this machine's failures.
+        $this->asGuest();
+        $this->http->postJson('api/auth.php', ['email' => $T['student_b_email'], 'password' => 'wrong']);
         $this->loginAsStudentB();
-        $stmt = $pdo->prepare('SELECT failed_login_count FROM users WHERE id = ?');
-        $stmt->execute([$T['student_b_user_id']]);
-        assert_eq((int) $stmt->fetchColumn(), 0, 'Successful login should reset the failure count');
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM login_failures WHERE email = ?');
+        $stmt->execute([$T['student_b_email']]);
+        assert_eq((int) $stmt->fetchColumn(), 0, 'Successful login should clear the failure count');
     }
 
     private function testForcedPasswordChangeBlocksApis(): void

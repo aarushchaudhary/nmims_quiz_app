@@ -29,7 +29,7 @@ if (!empty($_SESSION['force_password_change']) && !$isChangePasswordPage && !$is
     <link rel="stylesheet" href="<?= get_asset_url('assets/css/main.css') ?>" />
     
     <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="<?= get_asset_url('assets/vendor/select2-4.1.0-rc.0.min.css') ?>" rel="stylesheet" />
     
     <script>
         window.BASE_URL = '<?= get_base_url() ?>';

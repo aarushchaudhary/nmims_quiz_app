@@ -88,8 +88,9 @@ try {
     // Only update the password if a new one was provided
     if (!empty($password)) {
         // Same as a reset: an admin-set password must be changed at next login.
-        $sql_user .= ", password_hash = ?, must_change_password = 1, failed_login_count = 0, locked_until = NULL ";
+        $sql_user .= ", password_hash = ?, must_change_password = 1 ";
         $params_user[] = password_hash($password, PASSWORD_DEFAULT);
+        $pdo->prepare('DELETE FROM login_failures WHERE email = ?')->execute([$email]); // a reset also lifts a lockout
     }
     $sql_user .= "WHERE id = ?";
     $params_user[] = $user_id;

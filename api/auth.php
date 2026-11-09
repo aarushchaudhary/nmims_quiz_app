@@ -16,13 +16,24 @@ $email = $data['email'] ?? '';
 $password = $data['password'] ?? '';
 $force_login = $data['force'] ?? false;
 
-// After this many wrong passwords in a row, the account is locked for LOCKOUT_MINUTES.
+// After this many wrong passwords in a row from one machine, that machine is locked out of
+// this account for LOCKOUT_MINUTES. Keyed by email + IP, so a classmate guessing from their
+// own computer can't lock the real owner out.
 const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_MINUTES   = 15;
+$ip = $_SERVER['REMOTE_ADDR'] ?? '';
+
+// Checked before the password, so guesses made while locked are not even tried.
+$stmt_lock = $pdo->prepare('SELECT 1 FROM login_failures WHERE email = ? AND ip_address = ? AND locked_until > NOW()');
+$stmt_lock->execute([$email, $ip]);
+if ($stmt_lock->fetchColumn()) {
+    http_response_code(429);
+    exit(json_encode(['status' => 'error',
+        'message' => 'Too many failed login attempts. Try again in ' . LOCKOUT_MINUTES . ' minutes.']));
+}
 
 // Fetch user data
-$sql_user = "SELECT u.id, u.password_hash, u.active_session_id, u.role_id, u.must_change_password, s.sap_id,
-                    u.locked_until > NOW() AS is_locked
+$sql_user = "SELECT u.id, u.password_hash, u.active_session_id, u.role_id, u.must_change_password, s.sap_id
              FROM users u
              LEFT JOIN students s ON u.id = s.user_id
              WHERE u.email = :email AND u.is_active = 1";
@@ -30,28 +41,21 @@ $stmt_user = $pdo->prepare($sql_user);
 $stmt_user->execute(['email' => $email]);
 $user = $stmt_user->fetch();
 
-// Checked before the password, so guesses made while locked are not even tried.
-if ($user && $user['is_locked']) {
-    http_response_code(429);
-    exit(json_encode(['status' => 'error',
-        'message' => 'Too many failed login attempts. Try again in ' . LOCKOUT_MINUTES . ' minutes.']));
-}
-
 if (!$user || !password_verify($password, $user['password_hash'])) {
-    if ($user) {
+    if ($user) { // only real accounts, so random emails don't fill the table
         // locked_until is assigned first: MariaDB applies SET left to right, so it must see the old count.
-        $pdo->prepare('UPDATE users SET
-                           locked_until = IF(failed_login_count + 1 >= ?, NOW() + INTERVAL ? MINUTE, NULL),
-                           failed_login_count = IF(failed_login_count + 1 >= ?, 0, failed_login_count + 1)
-                       WHERE id = ?')
-            ->execute([MAX_FAILED_LOGINS, LOCKOUT_MINUTES, MAX_FAILED_LOGINS, $user['id']]);
+        $pdo->prepare('INSERT INTO login_failures (email, ip_address, failed_count) VALUES (?, ?, 1)
+                       ON DUPLICATE KEY UPDATE
+                           locked_until = IF(failed_count + 1 >= ?, NOW() + INTERVAL ? MINUTE, NULL),
+                           failed_count = IF(failed_count + 1 >= ?, 0, failed_count + 1)')
+            ->execute([$email, $ip, MAX_FAILED_LOGINS, LOCKOUT_MINUTES, MAX_FAILED_LOGINS]);
     }
     http_response_code(401);
     exit(json_encode(['status' => 'error', 'message' => 'Invalid credentials.']));
 }
 
-// Correct password: forget earlier failures.
-$pdo->prepare('UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = ?')->execute([$user['id']]);
+// Correct password: forget this machine's earlier failures.
+$pdo->prepare('DELETE FROM login_failures WHERE email = ? AND ip_address = ?')->execute([$email, $ip]);
 
 // Check for an existing active session
 if (!empty($user['active_session_id']) && !$force_login) {

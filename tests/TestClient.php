@@ -84,7 +84,9 @@ class TestClient
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
                 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             } else {
-                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+                // A CURLFile value means a file upload: pass the array so cURL sends multipart/form-data.
+                $hasFile = (bool) array_filter($data, fn($v) => $v instanceof CURLFile);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $hasFile ? $data : http_build_query($data));
             }
         }
 

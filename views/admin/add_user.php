@@ -85,7 +85,6 @@
     </form>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
 const BASE_URL = '<?= get_base_url() ?>';
 const coursesData = <?php echo json_encode($courses_data); ?>;

@@ -90,7 +90,7 @@ flowchart LR
 | Language | PHP 8.1+ (developed and tested on 8.5) |
 | Database | MariaDB 10.5+ (developed and tested on 11.8), InnoDB, utf8mb4 |
 | Web server | Apache httpd 2.4 with mod_php or PHP-FPM (PHP's built-in server for development) |
-| Frontend | Server-rendered PHP pages, vanilla JavaScript, one stylesheet, Chart.js |
+| Frontend | Server-rendered PHP pages, vanilla JavaScript, one stylesheet; Chart.js (results), jQuery + Select2 + flatpickr (quiz create/edit pages), all served locally |
 | Excel | PhpSpreadsheet (Composer, installed into `lib/vendor`) |
 | Auth | PHP sessions, role-based access control |
 | Tests | Plain-PHP HTTP test suite (`tests/`), GitHub Actions CI, Locust load tests (`locust/`) |
@@ -114,6 +114,8 @@ nmims_quiz_app/
 ├── assets/
 │   ├── css/main.css          The one stylesheet
 │   ├── js/script.js          Login, exam engine and shared helpers (loaded on every page)
+│   ├── vendor/               jQuery 3.7.1, Select2 4.1.0-rc.0, flatpickr 4.6.13 (quiz create/edit pages);
+│   │                         served locally so the app works on a LAN with no internet
 │   ├── images/               Logo, favicon, background
 │   └── templates/            header.php / footer.php and the two Excel import templates
 ├── config/
@@ -121,7 +123,8 @@ nmims_quiz_app/
 │   │                         forced-password-change checks
 │   ├── base_url.php          BASE_URL and URL helpers (get_asset_url, redirect, …)
 │   ├── authz.php             Permission helpers, eligibility rule, DEFAULT_PASSWORD
-│   └── grading.php           finalize_attempt(): disqualify or grade one attempt
+│   ├── grading.php           finalize_attempt(): disqualify or grade one attempt
+│   └── results.php           The results table and Excel export shared by all reports
 ├── views/                    Pages: admin/, faculty/, student/, placecom/, head/, shared/
 ├── lib/
 │   ├── composer.json/.lock   PHP dependencies (PhpSpreadsheet)
@@ -211,7 +214,7 @@ Change these by editing the file. Each one is a named constant or a clearly comm
 | Setting | Value | Where | What it does |
 |---|---|---|---|
 | Default password | `password` | `DEFAULT_PASSWORD` in `config/authz.php` | Starting password of every account an admin creates. |
-| Login lockout | 5 wrong passwords → 15 minutes | `MAX_FAILED_LOGINS`, `LOCKOUT_MINUTES` in `api/auth.php` | Locks an account after repeated wrong passwords. An admin password reset unlocks it. |
+| Login lockout | 5 wrong passwords → 15 minutes | `MAX_FAILED_LOGINS`, `LOCKOUT_MINUTES` in `api/auth.php` | Counted per account **and** computer (IP address), so only the machine making the guesses is locked out, never the owner on their own computer. An admin password reset clears it. |
 | Minimum password length | 6 | `api/shared/change_password.php` | Applies when a user changes their password. |
 | Violation limit | 3 | `VIOLATION_LIMIT` in `config/grading.php` **and** the `>= 3` check in `assets/js/script.js` | Tab switches, leaving fullscreen or blocked keys before the attempt is disqualified. Change both places together. |
 | Answer save grace period | 30 seconds | `api/student/save_answer.php` | How long after an attempt's deadline a save is still accepted (network delay). |
@@ -374,7 +377,8 @@ mariadb -h 127.0.0.1 -u nmims_quiz_app -p nmims_quiz_app < schema.sql
 | Table | Holds |
 |---|---|
 | `roles` | admin (1), faculty (2), placecom (3), student (4), school head (5), director (6), plus any added by admins |
-| `users` | Every account: email, password hash, role, active session, forced-change flag, lockout counters |
+| `users` | Every account: email, password hash, role, active session, forced-change flag |
+| `login_failures` | Wrong-password counter and lock time per email + IP address (login lockout) |
 | `admins`, `faculties`, `students`, `placecom_officers`, `heads` | Per-role profile (name, SAP ID, school, course, batch, graduation year) |
 | `schools` → `courses` → `classes` → `batches` | Academic structure. A **class** is a cohort (course + graduation year + SAP ID range); a **batch** is a section of a class with its own SAP ID range |
 | `electives`, `elective_students` | Elective subjects and who takes them |
@@ -407,7 +411,7 @@ mariadb-dump -h 127.0.0.1 -u nmims_quiz_app -p --single-transaction nmims_quiz_a
 | Default password | Every account created by an admin (form or Excel upload) starts with the password **`password`**. |
 | Forced change | Such accounts must change the password at first login. Until they do, every page redirects to *Change Password* and every API answers `403`. The new password can't be `password`, a student's SAP ID, or shorter than 6 characters. |
 | Admin reset | An admin can set a new password for any user (Reset Password, or a new password on Edit User). The user must change it at their next login, and the reset also lifts a lockout. |
-| Lockout | 5 wrong passwords in a row lock the account for 15 minutes (`429 Too many failed login attempts`). A correct login resets the counter. |
+| Lockout | 5 wrong passwords in a row from one computer lock **that computer** out of the account for 15 minutes (`429 Too many failed login attempts`). The owner can still log in from their own computer. A correct login clears the counter. |
 | One login at a time | Logging in on a second device ends the first session; the login page warns first. Logout frees the account. |
 | Role routing | After login, `index.php` sends admins, faculty, placecom, students and school heads to their dashboards; any other role (e.g. director) to the shared dashboard. |
 
@@ -605,7 +609,7 @@ graphify update . && python3 tools/graphify_augment.py . && graphify cluster-onl
 | Area | How |
 |---|---|
 | SQL injection | Every query uses PDO prepared statements, with native (non-emulated) prepares |
-| Passwords | bcrypt via `password_hash()`; default password and forced change; 5-try lockout |
+| Passwords | bcrypt via `password_hash()`; default password and forced change; 5-try lockout per account and computer |
 | Sessions | One active session per account; ID regenerated at login and password change; cookie `HttpOnly` and `SameSite=Lax` |
 | CSRF | `SameSite=Lax` cookie, and state-changing admin actions accept POST only |
 | Access control | Every endpoint checks the role; faculty only reach their own quizzes, students only their own attempts and assigned quizzes, school heads only their school's results |
@@ -648,3 +652,4 @@ GNU General Public License v3.0. See [LICENSE](LICENSE).
 
 - [PhpSpreadsheet](https://github.com/PHPOffice/PhpSpreadsheet): Excel import and export
 - [Chart.js](https://www.chartjs.org/): result charts
+- [jQuery](https://jquery.com/), [Select2](https://select2.org/) and [flatpickr](https://flatpickr.js.org/): pickers on the quiz create/edit pages (MIT licence, copies in `assets/vendor/`)

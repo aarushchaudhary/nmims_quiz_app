@@ -76,7 +76,7 @@
   $is_results_immediate_checked = $quiz['show_results_immediately'] ? 'checked' : '';
 ?>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="<?= get_asset_url('assets/vendor/flatpickr-4.6.13.min.css') ?>">
 <style>
   /* Optional: Improve Select2 appearance */
   .flatpickr-calendar {
@@ -247,9 +247,9 @@
   </form>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="<?= get_asset_url('assets/vendor/jquery-3.7.1.min.js') ?>"></script>
+<script src="<?= get_asset_url('assets/vendor/select2-4.1.0-rc.0.min.js') ?>"></script>
+<script src="<?= get_asset_url('assets/vendor/flatpickr-4.6.13.min.js') ?>"></script>
 
 <script>
 const BASE_URL = '<?= get_base_url() ?>';

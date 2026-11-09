@@ -25,11 +25,12 @@ try {
                     FROM student_attempts sa 
                     JOIN students s ON sa.student_id = s.user_id
                     JOIN quizzes q ON sa.quiz_id = q.id
-                    WHERE sa.id = ? AND sa.student_id = ?";
+                    WHERE sa.id = ? AND sa.student_id = ?
+                      AND q.show_results_immediately = 1 AND sa.submitted_at IS NOT NULL"; // same gate as the results page
     $stmt_summary = $pdo->prepare($sql_summary);
     $stmt_summary->execute([$attempt_id, $student_user_id]);
     $summary = $stmt_summary->fetch();
-    if (!$summary) { exit('Report not found or not authorized.'); }
+    if (!$summary) { exit('Results are not available yet.'); }
 
     // 2. Fetch Detailed Answers
     $sql_details = "SELECT q.question_text, sa.answer_text, sa.selected_option_ids, sa.is_correct, q.question_type_id 

@@ -90,12 +90,20 @@ CREATE TABLE `users` (
   `active_session_id` VARCHAR(255) DEFAULT NULL,
   `role_id`           INT          NOT NULL,
   `must_change_password` TINYINT(1) NOT NULL DEFAULT 0,
-  `failed_login_count` INT        NOT NULL DEFAULT 0,
-  `locked_until`      DATETIME     DEFAULT NULL,
   `is_active`         TINYINT(1)   NOT NULL DEFAULT 1,
   `created_at`        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Wrong-password counter per account *and* machine (api/auth.php): 5 in a row lock that
+-- machine out of that account for 15 minutes, without locking the owner out elsewhere.
+CREATE TABLE `login_failures` (
+  `email`        VARCHAR(100) NOT NULL,
+  `ip_address`   VARCHAR(45)  NOT NULL,
+  `failed_count` INT          NOT NULL DEFAULT 0,
+  `locked_until` DATETIME     DEFAULT NULL,
+  PRIMARY KEY (`email`, `ip_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `students` (

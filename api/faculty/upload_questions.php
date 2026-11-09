@@ -63,7 +63,7 @@ try {
         $option4 = trim($sheet->getCell('H' . $row)->getValue() ?? '');
         $correct_option_nums = explode(',', trim($sheet->getCell('I' . $row)->getValue() ?? ''));
 
-        if (empty($question_text)) continue;
+        if ($question_text === '') continue;
 
         // --- Data Validation & Lookup ---
         if (!array_key_exists($type_id, $question_types) || !array_key_exists($difficulty_id, $question_difficulties)) {
@@ -71,6 +71,20 @@ try {
         }
         if (!is_numeric($points) || $points < 0) {
             $points = 1.0; // Default to 1 point if points value is invalid or not specified
+        }
+
+        // MCQ/MSQ: the correct-answer numbers must point at filled-in options, else nobody can get it right.
+        // (Compare with '' — empty() would treat an option "0" as missing.)
+        $options = [$option1, $option2, $option3, $option4];
+        if ($type_id == 1 || $type_id == 2) {
+            $correct_option_nums = array_map('intval', array_filter(array_map('trim', $correct_option_nums), 'strlen'));
+            $filled = array_keys(array_filter($options, fn($o) => $o !== ''));
+            $valid_correct = array_filter($correct_option_nums, fn($n) => in_array($n - 1, $filled, true));
+            if (count($valid_correct) !== count($correct_option_nums) || !$valid_correct
+                || ($type_id == 1 && count(array_unique($valid_correct)) !== 1)) {
+                throw new Exception("Row {$row}: column I must list the correct option number(s) of filled-in options"
+                    . ($type_id == 1 ? ' (exactly one for MCQ).' : ' (at least one for MSQ).'));
+            }
         }
 
         // --- Insert Question with Points ---
@@ -81,12 +95,11 @@ try {
 
         // --- Insert Options (unchanged) ---
         if ($type_id == 1 || $type_id == 2) {
-            $options = [$option1, $option2, $option3, $option4];
             $sql_option = "INSERT INTO options (question_id, option_text, is_correct) VALUES (?, ?, ?)";
             $stmt_option = $pdo->prepare($sql_option);
 
             foreach ($options as $index => $option_text) {
-                if (!empty($option_text)) {
+                if ($option_text !== '') {
                     $option_num = $index + 1;
                     $is_correct = in_array($option_num, $correct_option_nums) ? 1 : 0;
                     $stmt_option->execute([$question_id, $option_text, $is_correct]);

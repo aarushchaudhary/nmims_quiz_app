@@ -52,9 +52,85 @@ class FacultyTest
                 fn() => $this->testGetItemAnalysis()),
             test('Faculty: ending a quiz grades attempts the student never submitted',
                 fn() => $this->testCompleteGradesOpenAttempts()),
+            test('Faculty: Excel upload keeps an option "0" and rejects MCQs with no correct answer',
+                fn() => $this->testUploadQuestionsValidation()),
+            test('Faculty: results report open attempts as In progress and average graded ones only',
+                fn() => $this->testResultsSummaryIgnoresOpenAttempts()),
             test('Faculty: export_results returns content',
                 fn() => $this->testExportResults()),
         ];
+    }
+
+    /** A throwaway quiz owned by test faculty A, so test data never mixes into TEST_QUIZ's bank. */
+    private function makeQuiz(): int
+    {
+        $T = $GLOBALS['TEST'];
+        get_test_pdo()->exec("INSERT INTO quizzes
+                        (title, faculty_id, course_id, start_time, end_time, duration_minutes, status_id,
+                         config_easy_count, config_medium_count, config_hard_count)
+                    VALUES ('TEST_QUIZ', {$T['faculty_user_id']}, {$T['sap_course_id']},
+                            DATE_SUB(NOW(), INTERVAL 10 MINUTE), DATE_ADD(NOW(), INTERVAL 50 MINUTE),
+                            60, 3, 0, 0, 0)");
+        return (int) get_test_pdo()->lastInsertId();
+    }
+
+    private function testUploadQuestionsValidation(): void
+    {
+        require_once __DIR__ . '/../lib/vendor/autoload.php';
+        $pdo     = get_test_pdo();
+        $quiz_id = $this->makeQuiz();
+        $file    = sys_get_temp_dir() . '/nmims_upload_test_' . getmypid() . '.xlsx';
+
+        // Columns: A text, B type, C difficulty, D points, E-H options, I correct option number(s)
+        $upload = function (array $row) use ($file, $quiz_id) {
+            $book = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $book->getActiveSheet()->fromArray(['Question', 'Type', 'Difficulty', 'Points', 'O1', 'O2', 'O3', 'O4', 'Correct'], null, 'A1');
+            $book->getActiveSheet()->fromArray($row, null, 'A2', true);
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save($file);
+            return $this->http->post('api/faculty/upload_questions.php',
+                ['quiz_id' => $quiz_id, 'question_file' => new CURLFile($file)]);
+        };
+        try {
+            $this->loginAsFaculty();
+            $upload(['What is 5 - 5?', 1, 1, 1, 0, 5, 10, -5, '1']);
+            $stmt = $pdo->prepare('SELECT o.option_text, o.is_correct FROM options o
+                                   JOIN questions q ON q.id = o.question_id WHERE q.quiz_id = ? ORDER BY o.id');
+            $stmt->execute([$quiz_id]);
+            $opts = $stmt->fetchAll();
+            assert_eq(count($opts), 4, 'All four options, including "0", should be saved');
+            assert_eq([$opts[0]['option_text'], (int) $opts[0]['is_correct']], ['0', 1], 'Option "0" should be saved as the correct one');
+
+            $res = $upload(['MCQ with no correct answer', 1, 1, 1, 'a', 'b', 'c', 'd', '']);
+            assert_true(str_contains($res['headers'], 'error='), 'A row with no correct option should be rejected');
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM questions WHERE quiz_id = ?');
+            $stmt->execute([$quiz_id]);
+            assert_eq((int) $stmt->fetchColumn(), 1, 'The rejected upload must not add a question');
+        } finally {
+            @unlink($file);
+            $pdo->prepare('DELETE FROM quizzes WHERE id = ?')->execute([$quiz_id]); // cascades questions, options
+        }
+    }
+
+    private function testResultsSummaryIgnoresOpenAttempts(): void
+    {
+        $pdo     = get_test_pdo();
+        $T       = $GLOBALS['TEST'];
+        $quiz_id = $this->makeQuiz();
+        // Student A finished with 4 points; student B is still taking it.
+        $pdo->prepare('INSERT INTO student_attempts (quiz_id, student_id, total_score, submitted_at) VALUES (?, ?, 4, NOW())')
+            ->execute([$quiz_id, $T['student_user_id']]);
+        $pdo->prepare('INSERT INTO student_attempts (quiz_id, student_id) VALUES (?, ?)')
+            ->execute([$quiz_id, $T['student_b_user_id']]);
+        try {
+            $this->loginAsFaculty();
+            $res = $this->http->get('api/faculty/get_quiz_results.php', ['quiz_id' => $quiz_id]);
+            assert_eq($res['status'], 200, 'get_quiz_results should return 200');
+            assert_eq($res['json']['summary']['total_attempts'], 2, 'Both attempts are listed');
+            assert_eq($res['json']['summary']['average_score'], '4.00', 'Average must ignore the open attempt');
+            assert_eq(array_column($res['json']['details'], 'status'), ['Completed', 'In progress'], 'Open attempt shows as In progress');
+        } finally {
+            $pdo->prepare('DELETE FROM quizzes WHERE id = ?')->execute([$quiz_id]); // cascades attempts
+        }
     }
 
     private function testCompleteGradesOpenAttempts(): void
