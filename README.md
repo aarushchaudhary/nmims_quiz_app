@@ -188,6 +188,8 @@ DB_PASS='your-db-password' php -S localhost:8080 router.php
 
 Open <http://localhost:8080> and log in as **admin@nmims.in** with password **password**. You will be asked to choose a new password straight away.
 
+**Tip:** to avoid typing the password every time, set it once in your shell. Add `export DB_PASS='your-db-password'` to `~/.bashrc` (or `~/.zshrc`) and open a new terminal; plain `php -S localhost:8080 router.php` and `php tests/test.php` then work. Without it, login fails and the server log shows `Access denied for user 'nmims_quiz_app'@'localhost' (using password: NO)`.
+
 `php -S` handles one request at a time, so it is fine for development but not for a class. For more than a handful of users, run Apache, or at least start the built-in server with workers: `PHP_CLI_SERVER_WORKERS=16 DB_PASS=… php -S 0.0.0.0:8080 router.php`.
 
 ---
@@ -197,6 +199,12 @@ Open <http://localhost:8080> and log in as **admin@nmims.in** with password **pa
 ### Environment variables
 
 These are all the settings that change between machines. They are read with `getenv()`, so they work from a shell (`php -S`), from Apache's `SetEnv` (mod_php and PHP-FPM), and from GitHub Actions.
+
+**Why environment variables instead of editing a config file?**
+- **The password stays out of git.** Anyone with a copy of the code (a teammate, GitHub, a backup) doesn't also get the database password.
+- **Same code, different machines.** Your laptop, the Apache server and CI each use their own settings without code changes, and a `git pull` never overwrites the server's settings.
+
+Every variable has a default except `DB_PASS`, so on a typical setup the password is the only one you set.
 
 | Variable | Default | Used in | What it does |
 |---|---|---|---|
@@ -626,7 +634,7 @@ Known limits: any non-student role (including every faculty member) can read eve
 
 | Symptom | Cause / fix |
 |---|---|
-| "Database connection failed" on every page | `DB_PASS` (or another `DB_*`) isn't reaching PHP. With Apache, check `SetEnv` in the virtual host and reload Apache; with `php -S`, set the variable on the same command line. |
+| "Database connection failed" on every page, or login fails; server log says `Access denied … (using password: NO)` | `DB_PASS` (or another `DB_*`) isn't reaching PHP. With `php -S`, set it on the same command line or `export` it in `~/.bashrc` (see [Quick start](#-quick-start-development)). With Apache, check `SetEnv` in the virtual host and reload Apache. |
 | Links and CSS broken, URLs missing a folder | `BASE_URL` doesn't match where the app is served. Use `/` for a virtual host and `/folder/` for a sub-folder. |
 | "Too many failed login attempts" | Wait 15 minutes, or have an admin reset the password. |
 | Every action says "Please change your password before continuing" | The account still has the default or a reset password. Open *Change Password*. |
