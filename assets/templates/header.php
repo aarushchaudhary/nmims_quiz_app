@@ -25,11 +25,11 @@ if (!empty($_SESSION['force_password_change']) && !$isChangePasswordPage && !$is
     
     <link rel="icon" type="image/png" href="<?= get_asset_url('assets/images/favicon.jpg') ?>">
     
+    <!-- Select2 CSS first, so the app's own Select2 styles in main.css win -->
+    <link href="<?= get_asset_url('assets/vendor/select2-4.1.0-rc.0.min.css') ?>" rel="stylesheet" />
+
     <!-- Consolidated stylesheet: Replaces base.css, components.css, login.css, manage.css, exam.css -->
     <link rel="stylesheet" href="<?= get_asset_url('assets/css/main.css') ?>" />
-    
-    <!-- Select2 CSS -->
-    <link href="<?= get_asset_url('assets/vendor/select2-4.1.0-rc.0.min.css') ?>" rel="stylesheet" />
     
     <script>
         window.BASE_URL = '<?= get_base_url() ?>';

@@ -89,7 +89,7 @@
     </div>
     <?php endif; ?>
 
-    <div style="text-align: center; margin-bottom: 30px; padding-top: 15px;">
+    <div class="quiz-title-block" style="text-align: center; margin-bottom: 30px; padding-top: 15px;">
         <h2 style="margin-bottom: 8px; color: #333; font-size: 1.8em;"><?php echo htmlspecialchars($quizName); ?></h2>
         <?php if ($courseInfo): ?>
             <h4 style="margin-top: 0; margin-bottom: 6px; color: #555; font-weight: 600;"><?php echo htmlspecialchars($courseInfo); ?></h4>

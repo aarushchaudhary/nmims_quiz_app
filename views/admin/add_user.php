@@ -158,34 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-
-    const schoolSelect = document.getElementById('student_school_id');
-    const courseSelect = document.getElementById('course_id');
-
-    schoolSelect.addEventListener('change', async function() {
-        const schoolId = this.value;
-        courseSelect.innerHTML = '<option value="">Loading...</option>';
-        courseSelect.disabled = true;
-
-        if (!schoolId) {
-            courseSelect.innerHTML = '<option value="">-- Select School First --</option>';
-            return;
-        }
-
-        try {
-            const response = await fetch(BASE_URL + `api/shared/get_courses_by_school.php?school_id=${schoolId}`);
-            const courses = await response.json();
-            
-            courseSelect.innerHTML = '<option value="" disabled selected>-- Select a Course --</option>';
-            courses.forEach(course => {
-                courseSelect.add(new Option(course.name, course.id));
-            });
-            courseSelect.disabled = false;
-        } catch (error) {
-            console.error('Failed to load courses:', error);
-            courseSelect.innerHTML = '<option value="">Error loading</option>';
-        }
-    });
 });
 </script>
 

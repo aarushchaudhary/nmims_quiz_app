@@ -29,7 +29,7 @@
         <div style="margin-bottom: 30px;">
             <h4 style="color: #0056b3; margin-bottom: 15px;">1. How to Create a New Quiz</h4>
             <ol style="line-height: 1.7; color: #444;">
-                <li>Go to the <strong>Manage Quizzes</strong> page and click <a href="create_quiz.php" class="button-red" style="padding: 4px 8px; font-size: 0.85em; text-decoration: none; margin: 0 5px;">Create New Quiz</a>.</li>
+                <li>Go to the <strong>Manage Quizzes</strong> page and click <a href="create_quiz.php" class="button-red" style="display: inline-block; width: auto; padding: 4px 8px; font-size: 0.85em; text-decoration: none; margin: 0 5px;">Create New Quiz</a>.</li>
                 <li>Fill in the Quiz Title, School, Course, Start/End Time, and Duration.</li>
                 <li>Select the target audience by checking the appropriate Sections, Batches, Electives, or Re-exam groups.</li>
                 <li><em>Optional:</em> Enter specific student SAP IDs separated by commas to manually invite them.</li>
