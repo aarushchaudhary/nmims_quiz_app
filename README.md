@@ -338,6 +338,55 @@ pm.max_spare_servers = 20
 
 Keep Apache on the default **event** MPM with PHP-FPM; its default limit of 150 simultaneous connections is enough because most requests finish in under a second. The database (2,000 students, 500 at once) is not the bottleneck.
 
+### 4. PHP-FPM and MariaDB settings
+
+These are the [PHP](#php-settings-phpini) and [MariaDB](#mariadb-settings) settings from Configuration, in the files PHP-FPM and MariaDB read on Ubuntu (replace `8.5` with your PHP version, `php -v`).
+
+`/etc/php/8.5/fpm/php.ini`:
+
+```ini
+date.timezone = Asia/Kolkata
+upload_max_filesize = 10M
+post_max_size = 12M
+max_execution_time = 60
+session.gc_maxlifetime = 7200
+```
+
+`/etc/mysql/mariadb.conf.d/50-server.cnf`, under `[mysqld]` (same time zone as PHP):
+
+```ini
+default-time-zone = '+05:30'
+```
+
+### 5. Restart and check
+
+```bash
+sudo systemctl restart mariadb php8.5-fpm apache2
+curl -I http://localhost/login.php    # 200: the app is served
+curl -I http://localhost/schema.sql   # 403: private files are blocked
+```
+
+Open `http://<server-ip>/` from another computer on the LAN and log in. If login fails with "Database connection failed", `DB_PASS` isn't reaching PHP: check the `SetEnv` line and reload Apache.
+
+Optionally, prove the whole app works on this server by running the test suite. **Use a scratch copy of the database**, not the live one:
+
+```bash
+DB_PASS='your-db-password' php tests/test.php --base-url=http://localhost
+```
+
+### 6. Moving to a new machine (keeping your data)
+
+Set up the new machine with steps 1–5, but instead of loading `schema.sql`, load a dump of the old database:
+
+```bash
+# on the old machine
+mariadb-dump -h 127.0.0.1 -u nmims_quiz_app -p --single-transaction nmims_quiz_app > nmims_backup.sql
+# copy nmims_backup.sql over, then on the new machine
+mariadb -h 127.0.0.1 -u nmims_quiz_app -p nmims_quiz_app < nmims_backup.sql
+```
+
+All accounts, quizzes, attempts and results move with the dump. Users keep their passwords. Everyone has to log in again once, and that first login may say "already logged in elsewhere"; choosing to continue is safe.
+
 ### Alternative: mod_php
 
 ```bash
