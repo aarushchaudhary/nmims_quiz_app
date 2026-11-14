@@ -1,15 +1,15 @@
-# Graph Report - nmims_quiz_app  (2026-11-10)
+# Graph Report - nmims_quiz_app  (2026-11-14)
 
 ## Corpus Check
 - cluster-only mode — file stats not available
 
 ## Summary
-- 820 nodes · 2816 edges · 34 communities (24 shown, 10 thin omitted)
+- 823 nodes · 2819 edges · 35 communities (25 shown, 10 thin omitted)
 - Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 407 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `95c3d838`
+- Built from commit: `ef042df1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -47,6 +47,7 @@
 - jquery-3.7.1.min.js
 - select2-4.1.0-rc.0.min.js
 - re
+- test.php
 
 ## God Nodes (most connected - your core abstractions)
 1. `redirect()` - 67 edges
@@ -75,14 +76,14 @@
 ## Import Cycles
 - None detected.
 
-## Communities (34 total, 10 thin omitted)
+## Communities (35 total, 10 thin omitted)
 
 ### Community 0 - "PHP Tests: Shared & HTTP Client"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (15): {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#2}(), {closure#3}(), {closure#4}() (+7 more)
 
 ### Community 1 - "StudentTest"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (12): {closure#1}(), {closure#10}(), {closure#11}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}() (+4 more)
 
 ### Community 2 - "Frontend JS: Exam Engine & Proctoring"
@@ -110,16 +111,16 @@ Cohesion: 0.08
 Nodes (41): head_can_view_quiz(), json_fail(), require_eligible_quiz(), require_login(), require_own_attempt(), require_owned_attempt_as_faculty(), require_owned_question(), require_owned_quiz() (+33 more)
 
 ### Community 10 - "PHP Tests: Admin & Test Harness"
-Cohesion: 0.21
-Nodes (8): AdminTest, bootstrap_cleanup(), bootstrap_setup(), bootstrap_teardown(), get_test_pdo(), assert_in(), assert_true(), colorize()
+Cohesion: 0.25
+Nodes (5): AdminTest, {closure#1}(), get_test_pdo(), assert_in(), assert_true()
 
 ### Community 13 - "Admin, Academic Hierarchy & Page Navigation"
 Cohesion: 0.05
-Nodes (57): get_asset_url(), get_base_url(), redirect(), admins (table), courses (table), electives (table), faculties (table), heads (table) (+49 more)
+Nodes (56): get_asset_url(), get_base_url(), redirect(), admins (table), courses (table), electives (table), faculties (table), heads (table) (+48 more)
 
 ### Community 14 - "PHP Tests: TestClient & Login"
-Cohesion: 0.08
-Nodes (8): AuthTest, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), test(), TestClient
+Cohesion: 0.11
+Nodes (7): AuthTest, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), TestClient
 
 ### Community 15 - "k"
 Cohesion: 0.11
@@ -130,8 +131,8 @@ Cohesion: 0.12
 Nodes (16): 🔑 Accounts and passwords, 🙏 Acknowledgments, 👨‍💻 Author, 🧠 Code knowledge graph, 📋 Contents, 📄 Excel import formats, 🧮 Grading rules, 🏗️ How it works (+8 more)
 
 ### Community 18 - "🌐 Deploying on Apache"
-Cohesion: 0.29
-Nodes (7): 1. Code, dependencies, database, 2. Apache + PHP-FPM, 3. Sizing for a full class, Alternative: mod_php, 🌐 Deploying on Apache, HTTPS, Serving from a sub-folder
+Cohesion: 0.20
+Nodes (10): 1. Code, dependencies, database, 2. Apache + PHP-FPM, 3. Sizing for a full class, 4. PHP-FPM and MariaDB settings, 5. Restart and check, 6. Moving to a new machine (keeping your data), Alternative: mod_php, 🌐 Deploying on Apache (+2 more)
 
 ### Community 19 - "NMIMS Quiz App — Locust Load Tests"
 Cohesion: 0.18
@@ -173,6 +174,10 @@ Nodes (20): se(), T(), m(), ht(), L(), N(), o(), p() (+12 more)
 Cohesion: 0.27
 Nodes (16): P(), ve(), c(), ee(), F(), I(), ne(), Q() (+8 more)
 
+### Community 34 - "test.php"
+Cohesion: 0.17
+Nodes (5): bootstrap_cleanup(), bootstrap_setup(), bootstrap_teardown(), colorize(), test()
+
 ## Knowledge Gaps
 - **10 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -180,16 +185,16 @@ Nodes (16): P(), ve(), c(), ee(), F(), I(), ne(), Q() (+8 more)
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `k()` connect `k` to `select2-4.1.0-rc.0.min.js`, `re`?**
-  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+  _High betweenness centrality (0.050) - this node is a cross-community bridge._
 - **Are the 7 inferred relationships involving `redirect()` (e.g. with `require_eligible_quiz()` and `require_login()`) actually correct?**
   _`redirect()` has 7 INFERRED edges - model-reasoned connections that need verification._
 - **Should `PHP Tests: Shared & HTTP Client` be split into smaller, more focused modules?**
-  _Cohesion score 0.12162162162162163 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1073170731707317 - nodes in this community are weakly interconnected._
 - **Why does `redirect()` connect `Admin, Academic Hierarchy & Page Navigation` to `Quiz & Exam Core (Faculty/Student APIs, Authz, Quiz Tables)`, `PHP Tests: Security / Authz`?**
   _High betweenness centrality (0.049) - this node is a cross-community bridge._
 - **Are the 56 inferred relationships involving `assert_eq()` (e.g. with `.testDashboardStats()` and `.testDashboardStatsGuest()`) actually correct?**
   _`assert_eq()` has 56 INFERRED edges - model-reasoned connections that need verification._
 - **Should `StudentTest` be split into smaller, more focused modules?**
-  _Cohesion score 0.13230769230769232 - nodes in this community are weakly interconnected._
-- **Why does `quizzes (table)` connect `Quiz & Exam Core (Faculty/Student APIs, Authz, Quiz Tables)` to `StudentTest`, `PHP Tests: Security / Authz`, `FacultyTest.php`, `Admin, Academic Hierarchy & Page Navigation`?**
+  _Cohesion score 0.11857707509881422 - nodes in this community are weakly interconnected._
+- **Why does `quizzes (table)` connect `Quiz & Exam Core (Faculty/Student APIs, Authz, Quiz Tables)` to `PHP Tests: Shared & HTTP Client`, `StudentTest`, `PHP Tests: Security / Authz`, `FacultyTest.php`, `Admin, Academic Hierarchy & Page Navigation`?**
   _High betweenness centrality (0.045) - this node is a cross-community bridge._
