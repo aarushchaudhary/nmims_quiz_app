@@ -4,7 +4,7 @@ A role-based online test platform built with PHP and MariaDB for NMIMS Hyderabad
 
 The app is built to run on a campus LAN behind Apache httpd, and needs no rewrite to move to a public web host.
 
-![License](https://img.shields.io/badge/license-GPL%203.0-blue.svg)
+![License](https://img.shields.io/badge/license-AGPL%203.0-blue.svg)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple.svg)
 ![MariaDB](https://img.shields.io/badge/MariaDB-10.5%2B-orange.svg)
 ![Tests](https://github.com/aarushchaudhary/nmims_quiz_app/actions/workflows/release.yml/badge.svg)
@@ -699,7 +699,9 @@ Known limits: any non-student role (including every faculty member) can read eve
 
 ## 📝 License
 
-GNU General Public License v3.0. See [LICENSE](LICENSE).
+GNU Affero General Public License v3.0 (AGPL-3.0). See [LICENSE](LICENSE).
+
+In short: you may use, change and share this app, but if you run a modified version that people use over a network (for example as a hosted quiz site), you must offer those users the source code of your version under the same licence.
 
 ## 👨‍💻 Author
 
